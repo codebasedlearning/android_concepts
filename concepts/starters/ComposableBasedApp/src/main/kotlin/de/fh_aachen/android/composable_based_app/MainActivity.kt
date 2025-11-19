@@ -2,22 +2,26 @@
 
 package de.fh_aachen.android.composable_based_app
 
-
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import de.fh_aachen.android.composable_based_app.ui.theme.FirstAppTheme
 
@@ -29,7 +33,7 @@ class MainActivity : ComponentActivity() {
             FirstAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "AMI-Android-Course 2025",
+                        name = "AMI-Android-Course",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -42,15 +46,11 @@ class MainActivity : ComponentActivity() {
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
         BackgroundImage(id = R.drawable.fruits)
-        WhiteText(text = "Hello $name!!!")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    FirstAppTheme {
-        Greeting("Android!!")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            WhiteText(text = "Hello $name!")
+            val text = stringResource(id = R.string.logcat_text)
+            Button(onClick = { Log.v("Main", text) }) { Text(text = "Press Me!") }
+        }
     }
 }
 
@@ -71,4 +71,14 @@ fun WhiteText(text: String, modifier: Modifier = Modifier) {
         color = Color.White,
         modifier = modifier
     )
+}
+
+//--- Previews ---
+
+@Preview
+@Composable
+fun GreetingPreview() {
+    FirstAppTheme {
+        Greeting("Android!!")
+    }
 }

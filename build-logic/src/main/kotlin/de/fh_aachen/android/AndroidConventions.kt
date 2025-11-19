@@ -17,9 +17,10 @@ class AndroidConventions : Plugin<Project> {
                 .toString().toInt()
 
         // for all projects and libs set these
-        val compileSdk = intProp("android.compileSdk", 36)
-        val minSdk     = intProp("android.minSdk", 27)
-        val targetSdk  = intProp("android.targetSdk", compileSdk)
+        val compileSdk   = intProp("android.compileSdk", 36)
+        val minSdk       = intProp("android.minSdk", 27)
+        val targetSdk    = intProp("android.targetSdk", compileSdk)
+        val jvmToolchain = intProp("kotlin.android.jvmToolchain", 21)
 
         project.plugins.withId("com.android.application") {
             project.extensions.configure<ApplicationExtension> {
@@ -50,7 +51,7 @@ class AndroidConventions : Plugin<Project> {
 
         project.plugins.withId("org.jetbrains.kotlin.android") {
             project.extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension> {
-                jvmToolchain(21)
+                jvmToolchain(jvmToolchain)
             }
         }
 
