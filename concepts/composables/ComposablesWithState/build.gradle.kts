@@ -8,36 +8,13 @@ plugins {
 }
 
 android {
-    namespace = "de.fh_aachen.android.composables_with_states"
-    // compileSdk = 35
+    namespace = "de.fh_aachen.android.composables_with_state"
 
     defaultConfig {
-        applicationId = "de.fh_aachen.android.composables_with_states"
-        // minSdk = 27
-        // targetSdk = 35
+        applicationId = "de.fh_aachen.android.composables_with_state"
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    /*
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-
-    kotlin {
-        jvmToolchain(21)
-    }
-
-    buildFeatures {
-        compose = true
-    } */
 }
 
 dependencies {

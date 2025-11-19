@@ -1,30 +1,26 @@
-// (C) 2025 A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
+// (C) A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
 
 package de.fh_aachen.android.app_with_screens.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import de.fh_aachen.android.app_with_screens.R
-import de.fh_aachen.android.ui_tools.RoundedRectangleWithText
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import de.fh_aachen.android.app_with_screens.Screen
+import de.fh_aachen.android.ui_tools.LocalNavController
 
 @Composable
 fun ZooScreen() {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            // bitmap = BitmapFactory.decodeResource(LocalContext.current.resources, this.resId).asImageBitmap(),
-            painter = painterResource(id = R.drawable.zoo),
-            contentDescription = "Background",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop // This scales the image to fill the entire box
-        )
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            RoundedRectangleWithText(text = "The Zoo")
+    val navController = LocalNavController.current
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Button(onClick = { navController.navigate(Screen.Home.name) }) {
+            Text("The Zoo", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
     }
 }

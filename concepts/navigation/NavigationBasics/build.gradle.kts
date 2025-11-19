@@ -54,6 +54,7 @@ dependencies {
     //implementation("androidx.compose.material:material:1.9.3")
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.activity.compose)
+    implementation(project(":libs-UiTools"))
     //implementation("androidx.compose.material3:material3-icons-extended:1.13.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

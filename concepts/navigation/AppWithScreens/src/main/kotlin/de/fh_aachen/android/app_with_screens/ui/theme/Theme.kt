@@ -1,3 +1,5 @@
+// (C) A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
+
 package de.fh_aachen.android.app_with_screens.ui.theme
 
 import android.os.Build

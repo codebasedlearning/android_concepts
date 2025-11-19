@@ -1,4 +1,4 @@
-// (C) 2025 A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
+// (C) A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
 
 package de.fh_aachen.android.app_with_screens
 
@@ -6,65 +6,35 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import de.fh_aachen.android.app_with_screens.screens.GarageScreen
 import de.fh_aachen.android.app_with_screens.screens.ZooScreen
+import de.fh_aachen.android.app_with_screens.ui.theme.FirstAppTheme
+import de.fh_aachen.android.ui_tools.NavScaffold
+import de.fh_aachen.android.ui_tools.NavScreen
+import de.fh_aachen.android.ui_tools.navScreensOf
+
+/*
+ * We use the UI library to encapsulate the details of the navigation and just provide
+ * a couple of screens to (Nav)Scaffold.
+ *
+ * The screens can be found in 'screens'.
+ */
+enum class Screen { Home, Settings }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MainScreen()
+            FirstAppTheme {
+                // from UI Tools
+                NavScaffold(
+                    navScreensOf(
+                        Screen.Home to NavScreen(R.drawable.icon_home, R.drawable.garage) { GarageScreen() },
+                        Screen.Settings to NavScreen(R.drawable.icon_gauge, R.drawable.zoo) { ZooScreen() },
+                    )
+                )
+            }
         }
-    }
-}
-
-@Composable
-fun MainScreen() {
-    val navController = rememberNavController()
-
-    Scaffold(
-        // topBar =
-        bottomBar = { BottomAppBarWithButtons(navController) },
-    ) { innerPadding ->
-        Navigation(navController = navController, modifier = Modifier.padding(innerPadding))
-    }
-}
-
-@Composable
-fun BottomAppBarWithButtons(navController: NavController) {
-    BottomAppBar(
-        actions = {
-            IconButton(onClick = { navController.navigate("home") }) {
-                Icon(imageVector = Icons.Default.Home, contentDescription = "Home")
-            }
-            IconButton(onClick = { navController.navigate("settings") }) {
-                Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings")
-            }
-        },
-        // floatingActionButton =
-    )
-}
-
-@Composable
-fun Navigation(navController: NavHostController, modifier: Modifier = Modifier) {
-    NavHost(navController = navController, startDestination = "home", modifier = modifier) {
-        composable("home") { GarageScreen() }
-        composable("settings") { ZooScreen() }
     }
 }

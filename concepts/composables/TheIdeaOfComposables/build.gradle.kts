@@ -5,39 +5,16 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("android-conventions")
-    // alias(libs.plugins.android.conventions)
 }
 
 android {
     namespace = "de.fh_aachen.android.the_idea_of_composables"
-    // compileSdk = 35
 
     defaultConfig {
         applicationId = "de.fh_aachen.android.the_idea_of_composables"
-        // minSdk = 27     // Oreo 8.1
-        // targetSdk = 35  // Android 15
         versionCode = 1
         versionName = "1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
-    /*
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            )
-        }
-    }
-
-    kotlin {
-        jvmToolchain(21)
-    }
-
-    buildFeatures {
-        compose = true
-    } */
 }
 
 dependencies {

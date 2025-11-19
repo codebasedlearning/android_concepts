@@ -9,35 +9,12 @@ plugins {
 
 android {
     namespace = "de.fh_aachen.android.composable_examples"
-    // compileSdk = 35
 
     defaultConfig {
         applicationId = "de.fh_aachen.android.composable_examples"
-        // minSdk = 27
-        // targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    /*
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-
-    kotlin {
-        jvmToolchain(21)
-    }
-
-    buildFeatures {
-        compose = true
-    } */
 }
 
 dependencies {

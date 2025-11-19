@@ -52,6 +52,7 @@ dependencies {
     //implementation(libs.androidx.material.icons.extended)
     //implementation("androidx.compose.material:material-icons-extended:1.9.3")
     //implementation("androidx.compose.material:material:1.9.3")
+    implementation(project(":libs-UiTools"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
