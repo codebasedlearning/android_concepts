@@ -51,37 +51,24 @@ import de.fh_aachen.android.ui_tools.NavScreen
 import de.fh_aachen.android.ui_tools.navScreensOf
 
 /*
-We use the UI library to encapsulate the details of the navigation and just provide
-a couple of screens to (Nav)Scaffold.
-*/
+ * We use the UI library to encapsulate the details of the navigation and just provide
+ * a couple of screens to (Nav)Scaffold.
+ */
 enum class Screen { Home, Sensor, List }
 
 /*
-We know two DI concepts for exposing configuration objects like models:
-- via constructor, which leads to many parameters down the composable hierarchy, and
-- via DI frameworks such as Hilt, which increases the complexity of the project.
-Here is a third approach, similar to Environments in iOS.
-
-staticCompositionLocalOf in Jetpack Compose is a way to create a CompositionLocal - a scoped,
-composable “context” that can provide values to Composables within a hierarchy without
-explicitly passing them as parameters. It specifically creates a static CompositionLocal,
-which is optimized for infrequent or stable changes in the provided value.
-This is ideal for values that don’t change often, like theme colors, current locale,
-or configuration objects.
- */
+ * In general, a ViewModel can be easily obtained by using `variable = viewModel()',
+ * and because a ViewModel is usually a lightweight object, you may be able to get
+ * different instances for different composables.
+ * If the ViewModel contains specific behaviour, such as broadcast receivers being active,
+ * it makes sense to use the same ViewModel for all composables.
+ * Now we need to make this available to all composables, so we use CompositionLocal.
+*/
 val LocalSensorViewModel = staticCompositionLocalOf<SensorViewModel> {
     error("No ViewModel provided")      // fill it later
 }
 
 class MainActivity : ComponentActivity() {
-    /*
-    In general, a ViewModel can be easily obtained by using `variable = viewModel()',
-    and because a ViewModel is usually a lightweight object, you may be able to get
-    different instances for different composables.
-    If the ViewModel contains specific behaviour, such as broadcast receivers being active,
-    it makes sense to use the same ViewModel for all composables.
-    Now we need to make this available to all composables, so we use CompositionLocal.
-    */
     private val sensorViewModel: SensorViewModel by viewModels()
 
     override fun onStart() {
@@ -103,10 +90,7 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(LocalSensorViewModel provides sensorViewModel) {
                     NavScaffold(
                         navScreensOf(
-                            Screen.Home to NavScreen(
-                                icon_home,
-                                background_castle
-                            ) { LoginScreen() },
+                            Screen.Home to NavScreen(icon_home, background_castle) { LoginScreen() },
                             Screen.Sensor to NavScreen(icon_gauge, background_gauge) { SensorScreen() },
                             Screen.List to NavScreen(icon_sensorlist, background_sensorlist) { SensorListScreen() }
                         )
@@ -119,7 +103,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun LoginScreen() {
-    // same idea, but done inside UI library
     val navController = LocalNavController.current
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Button(onClick = { navController.navigate(Screen.Sensor.name) }) {
@@ -143,6 +126,7 @@ fun SensorBlock(text:String, data: FloatArray, backgroundColor: Color) {
 @Composable
 fun SensorScreen() {
     val sensorViewModel = LocalSensorViewModel.current
+    // StateFlows
     val accelerometerData by sensorViewModel.accelerometerData.collectAsState()
     val gyroscopeData by sensorViewModel.gyroscopeData.collectAsState()
     val batteryData by sensorViewModel.batteryData.collectAsState()
