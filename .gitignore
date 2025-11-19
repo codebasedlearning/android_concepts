@@ -1,9 +1,15 @@
 # Gradle files
 .gradle/
 build/
+.gradle
+/*/.gradle/
+/build/**
+# /*/build/
+**/build/**
 
 # Local configuration file (sdk path, etc)
 local.properties
+/local.properties
 
 # Log/OS Files
 *.log
@@ -22,6 +28,13 @@ output-metadata.json
 misc.xml
 deploymentTargetDropDown.xml
 render.experimental.xml
+/.idea
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
 
 # Keystore files
 *.jks
@@ -32,3 +45,16 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Kotlin
+.kotlin
+/*/.kotlin/
+/build-logic/.kotlin/
+
+# MacOS
+.DS_Store
+
+# etc.
+/captures
+.externalNativeBuild
+.cxx
