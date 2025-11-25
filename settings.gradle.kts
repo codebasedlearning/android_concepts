@@ -47,7 +47,7 @@ fun includeConcepts(vararg unitRoots: String) {
 }
 
 // Include all concepts.
-includeConcepts("starters", "composables", "navigation", "sensors", "libs")
+includeConcepts("starters", "composables", "navigation", "permissions", "sensors", "libs")
 
 /*
  * For simple modules we usually have
