@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
@@ -39,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -58,8 +61,9 @@ class MainActivity : ComponentActivity() {
 }
 
 enum class NavDestination(val route: String, val doc: String,val icon: ImageVector, val resId:Int) {
-    HOME("home", "Home", Icons.Default.Home, R.drawable.garage),
-    SETTINGS("settings", "Settings", Icons.Default.Settings, R.drawable.zoo);
+    HOME("home", "Home", Icons.Default.Home, R.drawable.home_city),
+    SETTINGS("settings", "Settings", Icons.Default.Settings, R.drawable.settings_garage),
+    CAMERA("camera", "Camera", Icons.Default.Camera, R.drawable.camera_zoo);
 
     val Icon: Unit
         @Composable
@@ -68,7 +72,6 @@ enum class NavDestination(val route: String, val doc: String,val icon: ImageVect
     val Image: Unit
         @Composable
         get() = Image(
-            // bitmap = BitmapFactory.decodeResource(LocalContext.current.resources, this.resId).asImageBitmap(),
             painter = painterResource(id = this.resId),
             contentDescription = "Background",
             modifier = Modifier.fillMaxSize(),
@@ -134,7 +137,7 @@ fun TopAppBarWithButtons(drawerState: DrawerState) {
 }
 
 @Composable
-fun BottomAppBarWithButtons(navController: NavController) {
+fun BottomAppBarWithButtons(navController: NavHostController) {
     BottomAppBar(
         actions = {
             IconButton(onClick = { navController.navigate(NavDestination.HOME.route) }) {
@@ -143,16 +146,20 @@ fun BottomAppBarWithButtons(navController: NavController) {
             IconButton(onClick = { navController.navigate(NavDestination.SETTINGS.route) }) {
                 NavDestination.SETTINGS.Icon
             }
+            IconButton(onClick = { navController.navigate(NavDestination.CAMERA.route) }) {
+                NavDestination.CAMERA.Icon
+            }
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 val currentRoute = navController.currentBackStackEntry?.destination?.route
-                when(currentRoute) {
-                    NavDestination.HOME.route -> { navController.navigate(NavDestination.SETTINGS.route) }
-                    NavDestination.SETTINGS.route -> { navController.navigate(NavDestination.HOME.route) }
+                val previous = navController.previousBackStackEntry
+                if (currentRoute != NavDestination.HOME.route && previous != null) {
+                    navController.popBackStack()
+                    navController.navigate(NavDestination.HOME.route)
                 }
             }) {
-                Text(">>")
+                Text("<<")
             }
         }
     )
@@ -161,28 +168,53 @@ fun BottomAppBarWithButtons(navController: NavController) {
 @Composable
 fun Navigation(navController: NavHostController, modifier: Modifier = Modifier) {
     NavHost(navController = navController, startDestination = NavDestination.HOME.route, modifier = modifier) {
-        composable(NavDestination.HOME.route) { GarageScreen() }
-        composable(NavDestination.SETTINGS.route) { ZooScreen() }
+        composable(NavDestination.HOME.route) { HomeScreen(navController) }
+        composable(NavDestination.SETTINGS.route) { SettingsScreen(navController) }
+        composable(NavDestination.CAMERA.route) { CameraScreen(navController) }
     }
 }
 
 @Composable
-fun GarageScreen() {
+fun HomeScreen(navController: NavController) {
+    // box stacks children
     Box(modifier = Modifier.fillMaxSize()) {
         NavDestination.HOME.Image
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            RoundedRectangleWithText(text = "The Garage")
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Button(onClick = { navController.navigate("Settings") }) {
+                Text("➜ Settings", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(onClick = { navController.navigate("Camera") }) {
+                Text("➜ Camera", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+            }
         }
     }
 }
 
 @Composable
-fun ZooScreen() {
+fun SettingsScreen(navController: NavController) {
     Box(modifier = Modifier.fillMaxSize()) {
         NavDestination.SETTINGS.Image
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            RoundedRectangleWithText(text = "The Zoo")
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            RoundedRectangleWithText(text = "Settings – The Garage")
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(onClick = { navController.navigate("Home") }) {
+                Text("➜ Home", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+            }
         }
     }
 }
 
+@Composable
+fun CameraScreen(navController: NavController) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavDestination.CAMERA.Image
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            RoundedRectangleWithText(text = "Camera – The Zoo")
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(onClick = { navController.navigate("Home") }) {
+                Text("➜ Home", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+            }
+        }
+    }
+}

@@ -16,16 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.fh_aachen.android.ui_tools.LocalNavController
-import de.fh_aachen.android.ui_tools.RoundedRectangleWithText
 
 @Composable
-fun SettingsScreen() {
+fun HomeScreen() {
     val navController = LocalNavController.current
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        RoundedRectangleWithText(text = "Settings – The Garage")
+        Button(onClick = { navController.navigate("Settings") }) {
+            Text("➜ Settings", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+        }
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = { navController.navigate("Home") }) {
-            Text("➜ Home", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+        Button(onClick = { navController.navigate("Camera") }) {
+            Text("➜ Camera", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
     }
 }
