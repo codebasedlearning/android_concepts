@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.android.library) apply false
     // alias(libs.plugins.android.conventions) apply false
     alias(libs.plugins.hilt.android) apply false
-    id("com.google.devtools.ksp") version "2.2.20-2.0.2" apply false
+    id("com.google.devtools.ksp") version "2.2.20-2.0.3" apply false
 
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.21" apply false
 }
