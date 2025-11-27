@@ -49,7 +49,8 @@ import de.fh_aachen.android.ui_tools.navScreensOf
 
 /*
  * You can also use 'adb' to manipulate the permissions:
- *      /Users/voss/Library/Android/sdk/platform-tools/adb shell pm revoke de.fh_aachen.android.camera android.permission.CAMERA
+ *      /Users/voss/Library/Android/sdk/platform-tools/adb shell pm grant de.fh_aachen.android.permissions android.permission.CAMERA
+ *      /Users/voss/Library/Android/sdk/platform-tools/adb shell pm revoke de.fh_aachen.android.permissions android.permission.CAMERA
  * or general
  *      adb shell pm revoke your.package.name android.permission.the_one
  * Be aware that the app might be closed after the permission is revoked.
@@ -59,6 +60,13 @@ import de.fh_aachen.android.ui_tools.navScreensOf
  * provided to the user, explaining why the app needs a particular permission.
  * This helps users understand the purpose of the permission, making them more
  * likely to accept it if they see a clear reason behind the request.
+ */
+
+/*
+ * Topics:
+ *  - Permissions, State
+ *  - Intent
+ *  - adb
  */
 
 enum class Screen { Home, PermissionAndroid, PermissionAccompanist, Camera }
