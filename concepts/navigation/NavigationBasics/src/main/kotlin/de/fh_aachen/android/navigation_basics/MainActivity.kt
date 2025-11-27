@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -35,8 +36,10 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import de.fh_aachen.android.ui_tools.RoundedRectangleWithText
+import androidx.compose.runtime.getValue
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,10 +73,23 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showFab = currentRoute != "home"
 
     Scaffold(
         // topBar =
         bottomBar = { BottomAppBarWithButtons(navController) },
+        floatingActionButton = {
+            if (showFab) {
+                FloatingActionButton(
+                    onClick = { navController.popBackStack() } // or navController.navigateUp()
+                ) {
+                    Text("<<")
+                }
+            }
+        }
+
     ) { innerPadding ->
         Navigation(navController, modifier = Modifier.padding(innerPadding))
     }
@@ -93,8 +109,7 @@ fun BottomAppBarWithButtons(navController: NavController) {
             IconButton(onClick = { navController.navigate("camera") }) {
                 Icon(imageVector = Icons.Default.Camera, contentDescription = "Camera")
             }
-        },
-        // floatingActionButton =
+        }
     )
 }
 
@@ -120,11 +135,11 @@ fun HomeScreen(navController: NavController) {
             contentScale = ContentScale.Crop // This scales the image to fill the entire box
         )
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { navController.navigate("Settings") }) {
+            Button(onClick = { navController.navigate("settings") }) {
                 Text("➜ Settings", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { navController.navigate("Camera") }) {
+            Button(onClick = { navController.navigate("camera") }) {
                 Text("➜ Camera", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
             }
         }
@@ -143,7 +158,7 @@ fun SettingsScreen(navController: NavController) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             RoundedRectangleWithText(text = "Settings – The Garage")
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { navController.navigate("Home") }) {
+            Button(onClick = { navController.navigate("home") }) {
                 Text("➜ Home", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
             }
         }
@@ -162,7 +177,7 @@ fun CameraScreen(navController: NavController) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             RoundedRectangleWithText(text = "Camera – The Zoo")
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { navController.navigate("Home") }) {
+            Button(onClick = { navController.navigate("home") }) {
                 Text("➜ Home", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
             }
         }
