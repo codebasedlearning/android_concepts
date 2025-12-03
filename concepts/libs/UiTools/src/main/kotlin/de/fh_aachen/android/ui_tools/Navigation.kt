@@ -71,7 +71,7 @@ private fun NavBottomBar(screens: NavScreens) {
 
 @Composable
 private fun NavParentScreen(navHostController: NavHostController, screens: NavScreens, modifier: Modifier = Modifier) {
-    NavHost(navController = navHostController, startDestination = "home", modifier = modifier) {
+    NavHost(navController = navHostController, startDestination = screens[0].first.name, modifier = modifier) {
         screens.forEach { dest ->
             composable(dest.first.name) {
                 Box(modifier = Modifier.fillMaxSize()) {
