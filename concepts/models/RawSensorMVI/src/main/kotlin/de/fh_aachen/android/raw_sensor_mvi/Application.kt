@@ -8,6 +8,42 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
+/*
+ * Idea behind MVI
+ *
+ * MVI (Model–View–Intent) is basically unidirectional data-flow with
+ * one single source of truth (State).
+ *      Intent → Reduce → State → UI …again.
+ *
+ * In MVI, your UI doesn’t observe many pieces of data. Instead you keep
+ * one immutable State object. Here this is TemperatureViewState.
+ * This state describes the entire UI at this moment. Composables only ever
+ * read this.
+ *
+ * The UI never calls arbitrary functions on the ViewModel. Instead it sends
+ * Intents (no Android-Intents, App-specific). Here this is TemperatureIntent.
+ *
+ * The reducer is the function that takes
+ *      old State + Event/Intent → new State
+ * That is, it returns a brand-new state object, rather than mutating old values.
+ *
+ * In Jetpack Compose:
+ *  – composables collect the StateFlow<State>
+ *  – whenever the state changes, Compose automatically recomposes the UI
+ *
+ * Compose handles diffing and only redraws the parts that rely on changed fields.
+ * Then:
+ *  – Your app is just a state machine
+ *  – The UI is just a function of that state
+ *
+ * Cycle:
+ *  – User taps → Intent
+ *  – Intent → ViewModel
+ *  – ViewModel reduces → new State
+ *  – StateFlow emits → Compose re-renders UI
+ *  – UI shows new State → user taps again
+ */
+
 // use DI if you like
 
 data class ServiceLocator(

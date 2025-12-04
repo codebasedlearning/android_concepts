@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import de.fh_aachen.android.raw_sensor_mvi.sensors.TemperatureIntent
 import de.fh_aachen.android.raw_sensor_mvi.sensors.TemperatureMviViewModel
 import de.fh_aachen.android.ui_tools.NavScaffold
 import de.fh_aachen.android.ui_tools.NavScreen
+import de.fh_aachen.android.ui_tools.RoundedRectangle
 import de.fh_aachen.android.ui_tools.navScreensOf
 
 /*
@@ -71,6 +73,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HomeScreen() {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        RoundedRectangle { Text("MVI")}
+        Spacer(modifier = Modifier.height(16.dp))
         CityBox()
     }
 }

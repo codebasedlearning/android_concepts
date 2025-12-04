@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
  *  – UI no longer calls methods like viewModel.calibrate() directly.
  *  – UI instead sends intents via dispatch(intent).
  *  – ViewModel exposes immutable state via StateFlow<TemperatureViewState>.
- *  – Sensor updates are collected and reduced into state in reduceSensorData.
+ *  – Sensor updates are collected and reduced into new state
  */
 
 const val TAG = "SENSOR"
@@ -79,7 +79,8 @@ class TemperatureRepository(private val simulationScope: CoroutineScope) : Senso
 data class TemperatureViewState(
     val temperature: Int = 0,
     val isCalibrating: Boolean = false,
-    val error: String? = null
+    // more fields like
+    // val error: String? = null
 )
 
 /**
@@ -88,7 +89,25 @@ data class TemperatureViewState(
  */
 sealed interface TemperatureIntent {
     object CalibrateClicked : TemperatureIntent
+
+    // data class SetThreshold(val value: Int) : TemperatureIntent
+    // usage: TemperatureIntent.SetThreshold(42)
 }
+
+/*
+ * Why use a sealed interface for global objects like intents?
+ *
+ * A sealed interface means:
+ *  – all possible intents must be known at compile time
+ *  – they must live in the same file
+ *  – the compiler will warn you if your when() is missing a case.
+ *
+ * An interface lets you mix:
+ *  – objects (stateless 'events')
+ *  – data classes (intents with payloads)
+ *
+ * Read it as a closed, enum-like union of intent variants.
+ */
 
 // ----------------------------
 // MVI ViewModel ("store")
@@ -105,6 +124,7 @@ class TemperatureMviViewModel : ViewModel() {
         // Collect sensor data and reduce into state
         viewModelScope.launch {
             repository.data.collect { sensorData ->
+                // Internal "action" -> state reduction
                 reduceSensorData(sensorData)
             }
         }
@@ -114,19 +134,22 @@ class TemperatureMviViewModel : ViewModel() {
         when (intent) {
             TemperatureIntent.CalibrateClicked -> {
                 repository.calibrate()
-                // update state (MVI-style "reduce")
-                _state.value = _state.value.copy(isCalibrating = true)
+                // Internal "action" -> state reduction
+                reduceCalibrate()
             }
         }
     }
 
-    // Internal "action" -> state reduction
     private fun reduceSensorData(data: SensorData) {
         _state.value = _state.value.copy(
             temperature = data.rawValue,
-            // we might say that whenever we get new values, calibration is "done"
-            isCalibrating = false,
-            error = null
+            isCalibrating = false,  // when we get new values, we are done
+        )
+    }
+
+    private fun reduceCalibrate() {
+        _state.value = _state.value.copy(
+            isCalibrating = true,
         )
     }
 }
