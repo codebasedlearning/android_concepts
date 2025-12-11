@@ -71,6 +71,7 @@ fun MyAppTheme(
         else -> LightColorScheme
     }
 
+    // same idea as the NavController in UI Lib
     CompositionLocalProvider(
         LocalDensity provides Density(
             density = LocalDensity.current.density,

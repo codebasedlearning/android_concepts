@@ -43,6 +43,8 @@ class UserPreferencesRepository(
             }
 
     suspend fun setDarkMode(enabled: Boolean) {
+        // Edit the value in DataStore transactionally in an atomic read-modify-write operation.
+        // All operations are serialized.
         dataStore.edit { prefs ->
             prefs[Keys.DARK_MODE] = enabled
         }

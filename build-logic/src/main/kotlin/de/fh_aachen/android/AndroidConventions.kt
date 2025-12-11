@@ -18,7 +18,7 @@ class AndroidConventions : Plugin<Project> {
 
         // for all projects and libs set these
         val compileSdk   = intProp("android.compileSdk", 36)
-        val minSdk       = intProp("android.minSdk", 27)
+        val minSdk       = intProp("android.minSdk", 29)
         val targetSdk    = intProp("android.targetSdk", compileSdk)
         val jvmToolchain = intProp("kotlin.android.jvmToolchain", 21)
 
