@@ -49,6 +49,7 @@ fun includeConcepts(vararg unitRoots: String) {
 includeConcepts(
     "starters", "composables", "navigation", "permissions",
     "rest", "sensors", "database", "models", "preferences",
+    "dialogs",
     "libs"
 )
 
