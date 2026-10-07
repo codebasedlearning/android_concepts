@@ -3,9 +3,9 @@
 package de.fh_aachen.android.permissions
 
 import android.Manifest
-import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
@@ -49,8 +50,9 @@ import de.fh_aachen.android.ui_tools.navScreensOf
 
 /*
  * You can also use 'adb' to manipulate the permissions:
- *      /Users/voss/Library/Android/sdk/platform-tools/adb shell pm grant de.fh_aachen.android.permissions android.permission.CAMERA
- *      /Users/voss/Library/Android/sdk/platform-tools/adb shell pm revoke de.fh_aachen.android.permissions android.permission.CAMERA
+ *      adb shell pm grant de.fh_aachen.android.permissions android.permission.CAMERA
+ *      adb shell pm revoke de.fh_aachen.android.permissions android.permission.CAMERA
+ * (adb lives in <Android SDK>/platform-tools, put it on your PATH)
  * or general
  *      adb shell pm revoke your.package.name android.permission.the_one
  * Be aware that the app might be closed after the permission is revoked.
@@ -116,6 +118,13 @@ fun LoginScreen() {
 fun CameraScreen() {
     val context = LocalContext.current
     var camGranted by remember { mutableStateOf(isPermissionGranted(Manifest.permission.CAMERA,context)) }
+
+    // the user may change the permission in the system settings while we are in the background,
+    // so check again whenever the screen is resumed
+    LifecycleResumeEffect(Unit) {
+        camGranted = isPermissionGranted(Manifest.permission.CAMERA, context)
+        onPauseOrDispose { }
+    }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         RoundedRectangle {
@@ -188,11 +197,28 @@ fun PermissionScreenAndroid(
     // onPermissionGranted: () -> Unit,
 ) {
     val context = LocalContext.current
-    val activity = context as Activity
+    // LocalActivity instead of 'context as Activity' (LocalContext may be a ContextWrapper)
+    val activity = LocalActivity.current ?: return
     val permission = Manifest.permission.CAMERA
 
     // single flag we track ourselves
     var hasEverRequested by rememberSaveable { mutableStateOf(false) }
+
+    // The UI state is a snapshot of something Compose cannot observe (the permission
+    // database), so we keep it in a state and recompute it whenever it may have changed:
+    // after the dialog returns and whenever the screen is resumed (e.g. back from Settings).
+    fun computeUiState() = computePermissionUiState(
+        permission = permission,
+        context = context,
+        activity = activity,
+        hasEverRequested = hasEverRequested
+    )
+    var uiState by remember { mutableStateOf(computeUiState()) }
+
+    LifecycleResumeEffect(Unit) {
+        uiState = computeUiState()
+        onPauseOrDispose { }
+    }
 
     /*
      * rememberLauncherForActivityResult is a composable function that provides
@@ -205,20 +231,10 @@ fun PermissionScreenAndroid(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
-            // onPermissionGranted()
-        } else {
-            hasEverRequested = true
-        }
+        hasEverRequested = true
+        uiState = computeUiState()
+        // if (isGranted) onPermissionGranted()
     }
-
-    // single source of truth for UI state
-    val uiState = computePermissionUiState(
-        permission = permission,
-        context = context,
-        activity = activity,
-        hasEverRequested = hasEverRequested
-    )
 
     Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.TopCenter) {
         RoundedRectangle {
@@ -228,8 +244,7 @@ fun PermissionScreenAndroid(
                 }
                 PermissionUiState.NotGrantedRequestable -> {
                     NotGrantedRequestableBlock {
-                        hasEverRequested = true
-                        permissionLauncher.launch(permission)
+                        permissionLauncher.launch(permission)   // the result callback updates the state
                     }
                 }
                 PermissionUiState.NotGrantedShowRationale -> {
@@ -247,16 +262,20 @@ fun PermissionScreenAndroid(
     }
 }
 
+/*
+ * Accompanist only tells us 'granted', 'denied' and 'shouldShowRationale'. "Denied without
+ * rationale" means either "never asked" or "don't ask again" - the same ambiguity as above,
+ * so we need our own hasEverRequested flag here, too.
+ */
 @OptIn(ExperimentalPermissionsApi::class)
-fun computePermissionUiStateAccompanist(status: PermissionStatus): PermissionUiState =
+fun computePermissionUiStateAccompanist(status: PermissionStatus, hasEverRequested: Boolean): PermissionUiState =
     when (status) {
         PermissionStatus.Granted -> PermissionUiState.Granted
-        is PermissionStatus.Denied ->
-            if (status.shouldShowRationale) {
-                PermissionUiState.NotGrantedShowRationale
-            } else {
-                PermissionUiState.NotGrantedRequestable
-            }
+        is PermissionStatus.Denied -> when {
+            status.shouldShowRationale -> PermissionUiState.NotGrantedShowRationale
+            hasEverRequested -> PermissionUiState.NotGrantedMaybePermanentlyDenied
+            else -> PermissionUiState.NotGrantedRequestable
+        }
     }
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -265,16 +284,22 @@ fun PermissionScreenAccompanist(
     // onPermissionGranted: () -> Unit,
 ) {
     val context = LocalContext.current
-    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    var hasEverRequested by rememberSaveable { mutableStateOf(false) }
+    // the callback runs when the dialog returns; status itself is observable state
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA) {
+        hasEverRequested = true
+    }
 
-    val uiState = computePermissionUiStateAccompanist(cameraPermissionState.status)
+    val uiState = computePermissionUiStateAccompanist(cameraPermissionState.status, hasEverRequested)
 
     /*
      * LaunchedEffect (see below) is a composable function in Jetpack Compose that
      * allows you to run suspendable side effects (like coroutine operations) in response
      * to changes in the composition.
-     * It provides a way to launch coroutines within the composable scope in a safe,
-     * lifecycle-aware way.
+     * It is composition-aware, not lifecycle-aware: the coroutine is cancelled when the
+     * composable leaves the composition or the key changes, but it keeps running while the
+     * app is in the background. Lifecycle-aware variants are LifecycleStartEffect,
+     * LifecycleResumeEffect, repeatOnLifecycle or collectAsStateWithLifecycle.
      */
 
     Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.TopCenter) {

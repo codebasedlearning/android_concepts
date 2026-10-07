@@ -62,5 +62,7 @@ fun gotoSettingsActivity(
         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
         Uri.fromParts("package", context.packageName, null)
     )
+    // started from a non-Activity context (e.g. the application context) we need a new task
+    if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
 }

@@ -1,10 +1,12 @@
+// (C) A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 
-    id("com.google.devtools.ksp")
-    id("android-conventions")
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.fhac.android.conventions)
 }
 //https://developer.android.com/build/migrate-to-ksp
 
@@ -29,13 +31,12 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.moshi)
 
-    // Moshi Kotlin extension (for better Kotlin support)
-    implementation(libs.moshi.kotlin)
-
-    // Moshi code generation (Kotlin codegen for automatic adapters)
-    //kapt("com.squareup.moshi:moshi-kotlin-codegen:1.14.0")
+    // Moshi code generation: KSP generates an adapter for every @JsonClass(generateAdapter = true).
+    // Alternative: 'moshi-kotlin' with KotlinJsonAdapterFactory (reflection, pulls in kotlin-reflect).
+    // Use one of the two, not both.
     ksp(libs.moshi.kotlin.codegen)
 
     implementation(libs.retrofit)

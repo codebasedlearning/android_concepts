@@ -3,6 +3,9 @@
 package de.fh_aachen.android.preferences
 
 import android.app.Application
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import de.fh_aachen.android.preferences.model.UserPreferencesRepository
 
@@ -18,6 +21,13 @@ import de.fh_aachen.android.preferences.model.UserPreferencesRepository
  *
  * Older apps use SharedPreferences, having problems with blocking, corruptions and race conditions.
  */
+
+// Creates a property delegate for a single process DataStore.
+// Call it exactly once, at the top level of a file: a second DataStore instance for the same
+// file would corrupt it. As an extension on Context it is available wherever a Context is.
+// name: The name of the preferences. It will be stored in a file in the
+// "datastore/" subdirectory in the application context's files directory.
+val Context.userPrefsDataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
 // use DI if you like
 
@@ -36,13 +46,6 @@ class PreferencesApplication : Application() {
         }
     }
 
-    // Creates a property delegate for a single process DataStore.
-    // This should only be called once in a file (at the top level).
-    val userPrefsDataStore by preferencesDataStore(
-        // name: The name of the preferences. It will be stored in a file in the
-        // "datastore/" subdirectory in the application context's files directory.
-        name = "user_prefs"
-    )
     private val preferencesRepository by lazy { UserPreferencesRepository(userPrefsDataStore) }
 
     override fun onCreate() {

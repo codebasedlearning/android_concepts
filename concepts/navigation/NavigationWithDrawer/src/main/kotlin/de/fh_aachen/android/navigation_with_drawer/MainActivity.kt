@@ -48,6 +48,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import de.fh_aachen.android.ui_tools.RoundedRectangleWithText
+import de.fh_aachen.android.ui_tools.navigateToTopLevel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -73,7 +74,7 @@ enum class NavDestination(val route: String, val doc: String,val icon: ImageVect
         @Composable
         get() = Image(
             painter = painterResource(id = this.resId),
-            contentDescription = "Background",
+            contentDescription = null,      // decorative
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // This scales the image to fill the entire box
         )
@@ -113,7 +114,7 @@ fun DrawerContent(navController: NavController, drawerState: DrawerState) {
         for (destination in NavDestination.entries) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
-                navController.navigate(destination.route)
+                navController.navigateToTopLevel(destination.route)
                 scope.launch { drawerState.close() }
             }) {
                 Text(text = destination.doc)
@@ -140,24 +141,20 @@ fun TopAppBarWithButtons(drawerState: DrawerState) {
 fun BottomAppBarWithButtons(navController: NavHostController) {
     BottomAppBar(
         actions = {
-            IconButton(onClick = { navController.navigate(NavDestination.HOME.route) }) {
+            IconButton(onClick = { navController.navigateToTopLevel(NavDestination.HOME.route) }) {
                 NavDestination.HOME.Icon
             }
-            IconButton(onClick = { navController.navigate(NavDestination.SETTINGS.route) }) {
+            IconButton(onClick = { navController.navigateToTopLevel(NavDestination.SETTINGS.route) }) {
                 NavDestination.SETTINGS.Icon
             }
-            IconButton(onClick = { navController.navigate(NavDestination.CAMERA.route) }) {
+            IconButton(onClick = { navController.navigateToTopLevel(NavDestination.CAMERA.route) }) {
                 NavDestination.CAMERA.Icon
             }
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                val currentRoute = navController.currentBackStackEntry?.destination?.route
-                val previous = navController.previousBackStackEntry
-                if (currentRoute != NavDestination.HOME.route && previous != null) {
-                    navController.popBackStack()
-                    navController.navigate(NavDestination.HOME.route)
-                }
+                // back to Home: pop everything above it (Home stays), no new Home entry
+                navController.popBackStack(NavDestination.HOME.route, inclusive = false)
             }) {
                 Text("<<")
             }
@@ -180,11 +177,11 @@ fun HomeScreen(navController: NavController) {
     Box(modifier = Modifier.fillMaxSize()) {
         NavDestination.HOME.Image
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { navController.navigate("Settings") }) {
+            Button(onClick = { navController.navigate(NavDestination.SETTINGS.route) }) {
                 Text("➜ Settings", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { navController.navigate("Camera") }) {
+            Button(onClick = { navController.navigate(NavDestination.CAMERA.route) }) {
                 Text("➜ Camera", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
             }
         }
@@ -198,7 +195,7 @@ fun SettingsScreen(navController: NavController) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             RoundedRectangleWithText(text = "Settings – The Garage")
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { navController.navigate("Home") }) {
+            Button(onClick = { navController.navigate(NavDestination.HOME.route) }) {
                 Text("➜ Home", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
             }
         }
@@ -212,7 +209,7 @@ fun CameraScreen(navController: NavController) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             RoundedRectangleWithText(text = "Camera – The Zoo")
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { navController.navigate("Home") }) {
+            Button(onClick = { navController.navigate(NavDestination.HOME.route) }) {
                 Text("➜ Home", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
             }
         }

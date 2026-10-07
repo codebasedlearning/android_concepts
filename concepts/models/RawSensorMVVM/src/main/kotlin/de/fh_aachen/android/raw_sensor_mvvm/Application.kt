@@ -25,7 +25,7 @@ class RawSensorMVVMApplication : Application() {
         }
     }
 
-    // SupervisorJob grants that in case of an error other child coroutines are not cancelled.
+    // SupervisorJob ensures that a failing child coroutine does not cancel the others.
     private val appScope: CoroutineScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
     private val temperatureRepository by lazy { TemperatureRepository(appScope) }

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,122 +60,122 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
-    @Composable
-    fun MainScreen(modifier: Modifier = Modifier) {
-        Column(modifier) {
-            // all in one...
-            Row {
-                Text("This")
-                Text("is")
-                Text("Text")
-            }
-            // or as a Composable
-            SimpleRow()
-            RowWithModifiers()
-            RowAndBoxWithAlignments()
-            CrowdedRow()
-            ScrollableRow()
-            RowWithImage()
-        }
-    }
-
-    @Composable
-    fun SimpleRow() {
+@Composable
+fun MainScreen(modifier: Modifier = Modifier) {
+    Column(modifier) {
+        // all in one...
         Row {
             Text("This")
             Text("is")
             Text("Text")
         }
+        // or as a Composable
+        SimpleRow()
+        RowWithModifiers()
+        RowAndBoxWithAlignments()
+        CrowdedRow()
+        ScrollableRow()
+        RowWithImage()
     }
+}
 
-    @Composable
-    fun RowWithModifiers() {
-        Row(modifier = Modifier
-            .padding(all = 14.dp)
-            .background(Color.Gray)
+@Composable
+fun SimpleRow() {
+    Row {
+        Text("This")
+        Text("is")
+        Text("Text")
+    }
+}
+
+@Composable
+fun RowWithModifiers() {
+    Row(modifier = Modifier
+        .padding(all = 14.dp)
+        .background(Color.Gray)
+    ) {
+        Text("This")
+        Text("is", modifier = Modifier.padding(all = 4.dp))
+        Text("Text")
+    }
+}
+
+@Composable
+fun RowAndBoxWithAlignments() {
+    Row(modifier = Modifier
+        .background(Color.Cyan)
+        .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterStart
         ) {
             Text("This")
-            Text("is", modifier = Modifier.padding(all = 4.dp))
+        }
+        Box(modifier = Modifier
+            .weight(3f)
+            .background(Color.Magenta),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("is")
+        }
+        Box(modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterEnd
+        ) {
             Text("Text")
         }
     }
+}
 
-    @Composable
-    fun RowAndBoxWithAlignments() {
-        Row(modifier = Modifier
-            .background(Color.Cyan)
-            .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+@Composable
+fun CrowdedRow() {
+    Row(modifier = Modifier
+        .background(Color.Gray)
+        .clickable { Log.v(TAG, "clicked1") }
+    ) {
+        for (i in 1..15)
+            Text("Text-$i ")
+    }
+}
+
+@Composable
+fun ScrollableRow() {
+    LazyRow  {
+        items(15) { i ->                    // or items(list) { element -> ... }
+            Text("Text-${i + 1} ")
+        }
+    }
+}
+
+@Composable
+fun RowWithImage() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Image(
+            painter = painterResource(R.drawable.beach),
+            contentDescription = null,
+            modifier = Modifier
+                .size(75.dp)
+                .clip(CircleShape)
+                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+            .clickable { Log.v(TAG, "Image clicked") }
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Beach")
+        Spacer(modifier = Modifier.width(8.dp))
+        IconButton(
+            modifier = Modifier.size(width = 75.dp, height = 75.dp).clip(CircleShape),
+            onClick = { Log.v(TAG, "Icon clicked") }
         ) {
-            Box(modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text("This")
-            }
-            Box(modifier = Modifier
-                .weight(3f)
-                .background(Color.Magenta),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("is")
-            }
-            Box(modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Text("Text")
-            }
-        }
-    }
-
-    @Composable
-    fun CrowdedRow() {
-        Row(modifier = Modifier
-            .background(Color.Gray)
-            .clickable { Log.v("main", "clicked1") }
-        ) {
-            for (i in 1..15)
-                Text("Text-$i ")
-        }
-    }
-
-    @Composable
-    fun ScrollableRow() {
-        LazyRow  {
-            items((1..15).toList()) { i ->
-                Text("Text-$i ")
-            }
-        }
-    }
-
-    @Composable
-    fun RowWithImage() {
-        Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(R.drawable.beach),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(75.dp)
-                    .clip(CircleShape)
+                    .fillMaxSize()
                     .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                .clickable { Log.v(TAG, "Image clicked") }
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Beach")
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                modifier = Modifier.size(width = 75.dp, height = 75.dp).clip(CircleShape),
-                onClick = { Log.v(TAG, "Icon clicked") }
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.beach),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                )
-            }
         }
     }
 }

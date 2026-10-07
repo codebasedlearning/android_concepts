@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("android-conventions")
+    alias(libs.plugins.fhac.android.conventions)
 }
 
 android {
@@ -24,8 +24,9 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     //implementation(libs.androidx.material.icons.extended)
-    implementation("androidx.compose.material:material-icons-extended:1.6.7")
+    implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 

@@ -15,17 +15,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import de.fh_aachen.android.app_with_screens.Screen
 import de.fh_aachen.android.ui_tools.LocalNavController
 
 @Composable
 fun HomeScreen() {
     val navController = LocalNavController.current
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Button(onClick = { navController.navigate("Settings") }) {
+        Button(onClick = { navController.navigate(Screen.Settings.name) }) {
             Text("➜ Settings", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = { navController.navigate("Camera") }) {
+        Button(onClick = { navController.navigate(Screen.Camera.name) }) {
             Text("➜ Camera", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
     }

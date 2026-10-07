@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -54,6 +55,22 @@ fun navScreensOf(vararg pairs: Pair<Enum<*>, NavScreen>):NavScreens = listOf(*pa
  */
 val LocalNavController = staticCompositionLocalOf<NavController> {
     error("No NavController provided.")
+}
+
+/*
+ * Navigation between top-level destinations (toolbar, bottom bar, drawer).
+ * A plain navigate(route) pushes a new entry on every tap, so Back would walk through
+ * every tap. Instead:
+ *  - popUpTo(start) keeps only the start destination below the new one,
+ *  - saveState/restoreState keep the state of each top-level screen,
+ *  - launchSingleTop avoids a second copy of the same destination on top.
+ */
+fun NavController.navigateToTopLevel(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
 }
 
 interface SnackbarController {
@@ -149,7 +166,7 @@ fun FloatingToolbarSample(screens: NavScreens) {
             colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
         ) {
             screens.forEach {
-                IconButton(onClick = { navController.navigate(it.first.name) }) {
+                IconButton(onClick = { navController.navigateToTopLevel(it.first.name) }) {
                     Icon(imageVector = ImageVector.vectorResource(id = it.second.iconId), contentDescription = it.first.name)
                 }
             }

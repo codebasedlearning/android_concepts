@@ -19,12 +19,16 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.fh_aachen.android.preferences.model.SettingsViewModel
 import de.fh_aachen.android.preferences.ui.theme.MyAppTheme
@@ -43,16 +47,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             // see Theme.kt for user preferences
-                MyAppTheme {
-                    NavScaffold(
-                        navScreensOf(
-                            Screen.Home to NavScreen(
-                                R.drawable.icon_home,
-                                R.drawable.home_city
-                            ) { HomeScreen() },
-                        )
+            MyAppTheme {
+                NavScaffold(
+                    navScreensOf(
+                        Screen.Home to NavScreen(
+                            R.drawable.icon_home,
+                            R.drawable.home_city
+                        ) { HomeScreen() },
                     )
-                }
+                )
+            }
         }
     }
 }
@@ -85,7 +89,12 @@ fun HomeScreen() {
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
-    val prefs by viewModel.userPreferences.collectAsState()
+    val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
+
+    // The slider gets its own local state while dragging; we persist only when the user
+    // lets go (onValueChangeFinished) - otherwise every drag frame would be a disk write.
+    var fontScale by remember { mutableFloatStateOf(prefs.fontScale) }
+    LaunchedEffect(prefs.fontScale) { fontScale = prefs.fontScale }   // stored value arrives (async)
 
     Column(
         modifier = Modifier.padding(16.dp)
@@ -102,10 +111,11 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        Text("Font scale: ${prefs.fontScale}")
+        Text("Font scale: ${"%.2f".format(fontScale)}")
         Slider(
-            value = prefs.fontScale,
-            onValueChange = { viewModel.onFontScaleChanged(it) },
+            value = fontScale,
+            onValueChange = { fontScale = it },
+            onValueChangeFinished = { viewModel.onFontScaleChanged(fontScale) },
             valueRange = 0.8f..1.4f
         )
     }

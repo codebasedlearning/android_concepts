@@ -68,6 +68,9 @@ interface ProductDao {
     @Insert
     suspend fun insert(item: ProductEntity)
 
+    @Insert
+    suspend fun insertAll(items: List<ProductEntity>)
+
     @Query("SELECT * FROM product WHERE categoryId = :categoryId")
     fun getItemsForCategory(categoryId: UUID): Flow<List<ProductEntity>>
 
@@ -95,6 +98,10 @@ class Converters {
  * about your entities. It is not a 'database' in the traditional sense and it is
  * always a local SQLite database under the hood.
  *
+ * The Room Gradle plugin (see build.gradle.kts) exports the schema of every version as JSON
+ * into 'schemas/'. Commit those files: they document the schema history and are needed for
+ * AutoMigrations and migration tests.
+ *
  * You can define migration strategies, e.g.
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -118,9 +125,11 @@ abstract class ShopDatabase : RoomDatabase() {
         @Volatile
         private var instance: ShopDatabase? = null
 
+        // Double-checked locking: the second check inside synchronized matters, another
+        // thread may have created the instance while we were waiting for the lock.
         fun getDatabase(context: Context): ShopDatabase {
             return instance ?: synchronized(this) {
-                Room.databaseBuilder(
+                instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     ShopDatabase::class.java,
                     SchemaName
@@ -130,7 +139,7 @@ abstract class ShopDatabase : RoomDatabase() {
                     .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                     //.addMigrations(MIGRATION_1_2)
                     .build()
-                .apply { instance = this }
+                    .also { instance = it }
             }
         }
     }

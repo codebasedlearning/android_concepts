@@ -3,7 +3,6 @@
 package de.fh_aachen.android.modal_dialog.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -201,14 +200,15 @@ fun ColorSwatch(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    // Surface(onClick = ...) instead of Modifier.clickable: the ripple is clipped to the
+    // shape and the semantics (role, enabled) are set correctly.
     Surface(
+        onClick = onClick,
         shape = CircleShape,
         color = color,
         tonalElevation = if (selected) 6.dp else 0.dp,
         shadowElevation = if (selected) 8.dp else 2.dp,
-        modifier = Modifier
-            .size(44.dp)
-            .clickable(onClick = onClick),
+        modifier = Modifier.size(44.dp),
         border = if (selected)
             BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface)
         else null

@@ -7,20 +7,27 @@ import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
+/*
+ * Convention plugin 'fhac.android.conventions', applied in every module via
+ *      alias(libs.plugins.fhac.android.conventions)
+ *
+ * It sets compileSdk, minSdk, targetSdk and the JVM toolchain for all apps and libs.
+ * The values come from gradle.properties ('fhac.*'); the numbers below are only fallbacks
+ * if a property is missing - gradle.properties always wins.
+ */
 class AndroidConventions : Plugin<Project> {
     override fun apply(project: Project) {
 
-        // from gradle.properties
+        // findProperty also looks into the root project's gradle.properties
         fun intProp(key: String, default: Int) =
-            (project.findProperty(key) ?: project.rootProject.findProperty(key) ?: default)
-                .toString().toInt()
+            (project.findProperty(key) ?: default).toString().toInt()
 
-        // for all projects and libs set these
-        val compileSdk   = intProp("android.compileSdk", 36)
-        val minSdk       = intProp("android.minSdk", 29)
-        val targetSdk    = intProp("android.targetSdk", compileSdk)
-        val jvmToolchain = intProp("kotlin.android.jvmToolchain", 21)
+        val compileSdk   = intProp("fhac.compileSdk", 37)
+        val minSdk       = intProp("fhac.minSdk", 27)
+        val targetSdk    = intProp("fhac.targetSdk", compileSdk)
+        val jvmToolchain = intProp("fhac.jvmToolchain", 21)
 
         project.plugins.withId("com.android.application") {
             project.extensions.configure<ApplicationExtension> {
@@ -31,11 +38,8 @@ class AndroidConventions : Plugin<Project> {
                 }
                 buildTypes {
                     getByName("release") {
-                        isMinifyEnabled = false
+                        isMinifyEnabled = false     // no shrinking/obfuscation in this course project
                     }
-                }
-                buildFeatures { // also set by plugin id("org.jetbrains.kotlin.plugin.compose")
-                    compose = true
                 }
             }
         }
@@ -49,11 +53,22 @@ class AndroidConventions : Plugin<Project> {
             }
         }
 
-        project.plugins.withId("org.jetbrains.kotlin.android") {
-            project.extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension> {
-                jvmToolchain(jvmToolchain)
+        // Compose only where the Compose compiler plugin is applied (the XML starter has none).
+        project.plugins.withId("org.jetbrains.kotlin.plugin.compose") {
+            project.plugins.withId("com.android.application") {
+                project.extensions.configure<ApplicationExtension> { buildFeatures { compose = true } }
+            }
+            project.plugins.withId("com.android.library") {
+                project.extensions.configure<LibraryExtension> { buildFeatures { compose = true } }
             }
         }
 
+        // With AGP 9 'built-in Kotlin' (android.builtInKotlin=true) this plugin id is gone,
+        // then the toolchain has to be configured differently - see gradle.properties.
+        project.plugins.withId("org.jetbrains.kotlin.android") {
+            project.extensions.configure<KotlinAndroidProjectExtension> {
+                jvmToolchain(jvmToolchain)
+            }
+        }
     }
 }

@@ -2,9 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("android-conventions")
+    alias(libs.plugins.fhac.android.conventions)
 
-    id("org.jetbrains.kotlin.plugin.serialization")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -27,12 +27,10 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     //implementation(libs.material)
-    implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     //implementation("androidx.compose.material:material-icons-extended:1.13.0")
     //implementation("androidx.compose.material:material:1.9.3")
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.activity.compose)
     implementation(project(":libs-UiTools"))
 
     debugImplementation(libs.androidx.ui.tooling)
@@ -40,9 +38,8 @@ dependencies {
 
     // Navigation 3
     implementation(libs.androidx.navigation3.runtime)
-    implementation(libs.androidx.navigation3.ui.android)
+    implementation(libs.androidx.navigation3.ui)
 
     // For rememberNavBackStack (uses Kotlin serialization)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.compose.material3)
 }

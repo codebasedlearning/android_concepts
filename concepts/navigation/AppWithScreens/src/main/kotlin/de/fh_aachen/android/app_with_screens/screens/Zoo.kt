@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import de.fh_aachen.android.app_with_screens.Screen
 import de.fh_aachen.android.ui_tools.LocalNavController
 import de.fh_aachen.android.ui_tools.RoundedRectangleWithText
 
@@ -24,7 +25,7 @@ fun CameraScreen() {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         RoundedRectangleWithText(text = "Camera – The Zoo")
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = { navController.navigate("Home") }) {
+        Button(onClick = { navController.navigate(Screen.Home.name) }) {
             Text("➜ Home", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
     }

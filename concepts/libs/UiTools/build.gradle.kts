@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("android-conventions")
+    alias(libs.plugins.fhac.android.conventions)
 }
 
 android {
@@ -12,6 +12,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
@@ -20,9 +21,8 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
 
-    implementation(platform(libs.androidx.compose.bom))
+    // 'api' instead of 'implementation': our public API exposes navigation types
+    // (LocalNavController: NavController), so every app using UiTools needs them, too.
+    api(libs.androidx.navigation.compose)
 }

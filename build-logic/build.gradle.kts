@@ -11,10 +11,11 @@ repositories {
 }
 
 dependencies {
-    //implementation("com.android.tools.build:gradle:8.13.0")
-    // use the AGP version from libs.versions.toml
-    implementation("com.android.tools.build:gradle:${libs.versions.agp.get()}")
-    implementation(kotlin("gradle-plugin", embeddedKotlinVersion))
+    // 'compileOnly': we only compile against AGP and KGP. At runtime the versions applied in the
+    // root build.gradle.kts are used, so libs.versions.toml decides them in exactly one place
+    // (same pattern as in Google's "Now in Android" sample).
+    compileOnly("com.android.tools.build:gradle:${libs.versions.agp.get()}")
+    compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
 }
 
 java {
@@ -25,11 +26,10 @@ java {
 
 gradlePlugin {
     plugins {
-        // one way to introduce the plugin
         create("androidConventions") {
-            id = "android-conventions"
+            // namespaced id; modules use it via alias(libs.plugins.fhac.android.conventions)
+            id = "fhac.android.conventions"
             implementationClass = "de.fh_aachen.android.AndroidConventions"
-            version = "0.1.0"
         }
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,7 +28,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.sp
-import kotlin.getValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -37,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.fh_aachen.android.sensors.R.drawable.icon_home
 import de.fh_aachen.android.sensors.R.drawable.icon_gauge
 import de.fh_aachen.android.sensors.R.drawable.icon_sensorlist
@@ -71,15 +70,8 @@ val LocalSensorViewModel = staticCompositionLocalOf<SensorViewModel> {
 class MainActivity : ComponentActivity() {
     private val sensorViewModel: SensorViewModel by viewModels()
 
-    override fun onStart() {
-        super.onStart()
-        sensorViewModel.startListening()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        sensorViewModel.stopListening()
-    }
+    // No onStart/onStop needed: the screens collect with collectAsStateWithLifecycle, and
+    // the ViewModel's StateFlows only listen to the sensors while somebody collects.
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,9 +119,9 @@ fun SensorBlock(text:String, data: FloatArray, backgroundColor: Color) {
 fun SensorScreen() {
     val sensorViewModel = LocalSensorViewModel.current
     // StateFlows
-    val accelerometerData by sensorViewModel.accelerometerData.collectAsState()
-    val gyroscopeData by sensorViewModel.gyroscopeData.collectAsState()
-    val batteryData by sensorViewModel.batteryData.collectAsState()
+    val accelerometerData by sensorViewModel.accelerometerData.collectAsStateWithLifecycle()
+    val gyroscopeData by sensorViewModel.gyroscopeData.collectAsStateWithLifecycle()
+    val batteryData by sensorViewModel.batteryData.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize().padding(top=20.dp), contentAlignment = Alignment.TopCenter) {
         Row {

@@ -38,47 +38,48 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
-    // more 'composable'
+// more 'composable'
+// Composables are top-level functions: reusable, previewable and without a hidden
+// reference to the Activity (as a member function they would capture 'this').
 
-    @Composable
-    fun TextTuple(text1: String, text2: String, modifier: Modifier = Modifier) {
-        Column(modifier = modifier) {
-            Row {
-                Text(text = text1)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(text = text2)
-            }
-            Text("Here comes a button...")
-            ClickButton()
+@Composable
+fun TextTuple(text1: String, text2: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Row {
+            Text(text = text1)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = text2)
         }
-    }
-
-    @Composable
-    fun ClickButton() {
-        Column {
-            Button(onClick = {
-                Log.w(TAG,"Watch out!")
-            }) {
-                Text("Warn Me")
-            }
-        }
-    }
-
-    //----- preview area
-
-    @Preview
-    @Composable
-    fun PreviewTextTuple() {
-        TextTuple("Hello", "Course!")   // calling composable with values
-    }
-
-    @Preview
-    @Composable
-    fun PreviewMyButton() {
+        Text("Here comes a button...")
         ClickButton()
     }
+}
 
+@Composable
+fun ClickButton() {
+    Column {
+        Button(onClick = {
+            Log.w(TAG,"Watch out!")
+        }) {
+            Text("Warn Me")
+        }
+    }
+}
+
+//----- preview area
+
+@Preview
+@Composable
+fun PreviewTextTuple() {
+    TextTuple("Hello", "Course!")   // calling composable with values
+}
+
+@Preview
+@Composable
+fun PreviewMyButton() {
+    ClickButton()
 }
 
 /*
@@ -133,9 +134,10 @@ Recomposition
   - Recomposition: Happens when the state value changes (e.g., MutableState is updated).
     This re-executes the body of the Composable to reflect changes, but lifecycle events like
     DisposableEffect don’t run again unless their key changes.
-  - Recreation: Only occurs when the key passed to the DisposableEffect changes or the Composable
-    itself is structurally rebuilt (for example, due to configuration changes or
-    parent recompositions that cause full re-entry into the composition).
+  - Leaving and re-entering the composition: a composable (with its remembered state and effects)
+    starts from scratch when it leaves the composition and comes back, e.g. an if-branch
+    toggles, its key changes, or the Activity is recreated on a configuration change.
+    Effects like DisposableEffect also restart when their key changes.
 
 General
   - Composable functions can execute in any order.

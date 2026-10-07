@@ -40,10 +40,11 @@ Assume for the sake of discussion that applicationContext is any Context object.
 
 1b) When is the use of a weak reference a good idea?
     Weak references are useful when you want to hold onto an object temporarily, but don't
-    want to keep it alive if it would otherwise be garbage-collected. For example, holding
-    a `Context` reference in a singleton or global object benefits from a weak reference,
-    because contexts are often tied to the lifecycle of activities or applications, and
-    strong references to them can lead to memory leaks.
+    want to keep it alive if it would otherwise be garbage-collected. For example, a cache, or
+    a listener that must not keep its owner alive. For a `Context` it depends on which one:
+    an Activity context in a singleton is a classic memory leak (the Activity is destroyed on
+    every rotation), so there a weak reference (or better: no reference at all) is the fix.
+    The Application context lives as long as the process, so it can never leak - see 3).
 
 1c) Would it be better to use 'WeakReference<Context>?'
     Using `WeakReference<Context>?` (nullable weak reference) would allow you to
@@ -54,11 +55,11 @@ Assume for the sake of discussion that applicationContext is any Context object.
     `applicationContext` for initialization status without relying on `.get()`.
 
 1d) Is a strong reference safe?
-    Using a strong reference to a `Context` in a singleton or global object is generally
-    not safe because it can lead to memory leaks. For instance, if you hold a strong
-    reference to an Activity context, it will not be garbage-collected until the singleton
-    releases that reference. By using a weak reference, you ensure that the context can
-    be garbage-collected when the app no longer needs it, helping to avoid potential leaks.
+    For an Activity (or View, Fragment) context: no. A singleton holding it keeps the destroyed
+    Activity and its whole view tree alive - a memory leak.
+    For the Application context: yes, and it is the usual choice. It is created once per
+    process and lives as long as the process, so there is nothing to leak. The WeakReference
+    here only adds null checks; 'lateinit var applicationContext: Context' would do.
 
 2a) Why do we need to check for zero, or in what constellation is there a problem?
     In this context, "checking for zero" means checking if `applicationContext.get()`

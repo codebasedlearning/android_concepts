@@ -39,6 +39,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import de.fh_aachen.android.ui_tools.RoundedRectangleWithText
+import de.fh_aachen.android.ui_tools.navigateToTopLevel
 import androidx.compose.runtime.getValue
 
 class MainActivity : ComponentActivity() {
@@ -99,14 +100,15 @@ fun MainScreen() {
 fun BottomAppBarWithButtons(navController: NavController) {
     BottomAppBar(
         actions = {
-            // use buttons for navigation
-            IconButton(onClick = { navController.navigate("home") }) {
+            // use buttons for navigation; these are top-level destinations, so we use
+            // navigateToTopLevel (UiTools) instead of navigate - otherwise every tap is a new entry
+            IconButton(onClick = { navController.navigateToTopLevel("home") }) {
                 Icon(imageVector = Icons.Default.Home, contentDescription = "Home")
             }
-            IconButton(onClick = { navController.navigate("settings") }) {
+            IconButton(onClick = { navController.navigateToTopLevel("settings") }) {
                 Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings")
             }
-            IconButton(onClick = { navController.navigate("camera") }) {
+            IconButton(onClick = { navController.navigateToTopLevel("camera") }) {
                 Icon(imageVector = Icons.Default.Camera, contentDescription = "Camera")
             }
         }
@@ -130,7 +132,7 @@ fun HomeScreen(navController: NavController) {
         Image(
             // bitmap = BitmapFactory.decodeResource(LocalContext.current.resources, this.resId).asImageBitmap(),
             painter = painterResource(id = R.drawable.home_city),
-            contentDescription = "Background",
+            contentDescription = null,      // decorative
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // This scales the image to fill the entire box
         )
@@ -151,7 +153,7 @@ fun SettingsScreen(navController: NavController) {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.settings_garage),
-            contentDescription = "Background",
+            contentDescription = null,      // decorative
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // This scales the image to fill the entire box
         )
@@ -170,7 +172,7 @@ fun CameraScreen(navController: NavController) {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.camera_zoo),
-            contentDescription = "Background",
+            contentDescription = null,      // decorative
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // This scales the image to fill the entire box
         )

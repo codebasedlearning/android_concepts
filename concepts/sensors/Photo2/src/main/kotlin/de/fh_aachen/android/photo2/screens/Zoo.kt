@@ -21,9 +21,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.LocalLifecycleOwner     // moved here from androidx.compose.ui.platform
 
 @Composable
 fun CameraScreen(
@@ -39,7 +39,8 @@ fun CameraScreen(
     LaunchedEffect(previewView) {
         val view = previewView ?: return@LaunchedEffect
 
-        val cameraProvider = ProcessCameraProvider.getInstance(context).get()
+        // suspends until CameraX is initialised; getInstance(context).get() would block the main thread
+        val cameraProvider = ProcessCameraProvider.awaitInstance(context)
 
         val preview = Preview.Builder().build().also {
             it.setSurfaceProvider(view.surfaceProvider)

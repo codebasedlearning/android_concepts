@@ -4,7 +4,7 @@ package de.fh_aachen.android.location
 
 import android.app.Application
 
-class CameraApplication : Application() {
+class LocationApplication : Application() {
 //    override fun onCreate() {
 //        super.onCreate()
 //    }

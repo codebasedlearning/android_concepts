@@ -1,9 +1,12 @@
+// (C) A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp")
-    id("android-conventions")
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
+    alias(libs.plugins.fhac.android.conventions)
 }
 
 android {
@@ -16,6 +19,12 @@ android {
     }
 }
 
+// Room Gradle plugin: exports the schema of every database version as JSON into 'schemas/'.
+// Commit these files; they are the basis for migrations and AutoMigrations.
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -26,6 +35,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.navigation.compose)
 

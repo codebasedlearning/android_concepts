@@ -7,13 +7,15 @@ import androidx.lifecycle.viewModelScope
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import de.fh_aachen.android.rest.service_locator.ServiceLocator
+import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import retrofit2.http.GET
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import retrofit2.http.Query
@@ -45,7 +47,9 @@ interface UserActivityApi {
     @GET("users")
     suspend fun getUsers(): List<UserModel>
 
-    @GET("/posts")
+    // No leading slash: "/posts" would be resolved against the host and drop any path of the
+    // base URL (e.g. "https://host/api/" + "/posts" = "https://host/posts").
+    @GET("posts")
     suspend fun getUserPosts(@Query("userId") userId: Int): List<UserPostModel>
 
     // other commands such as @POST are also supported (see Retrofit)
@@ -67,29 +71,45 @@ class UserActivityViewModel() : ViewModel() {
     private val repository: UserActivityRepository = ServiceLocator.userActivityRepository
 
     private val _users = MutableStateFlow<List<UserModel>>(emptyList())
-    val users: StateFlow<List<UserModel>> = _users
+    val users: StateFlow<List<UserModel>> = _users.asStateFlow()
+
+    // Network calls fail (offline, timeout, HTTP error). An uncaught exception in
+    // viewModelScope crashes the app, so we turn it into UI state.
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    private suspend fun <T> loadOrNull(what: String, block: suspend () -> T): T? = try {
+        block().also { _error.value = null }
+    } catch (e: CancellationException) {
+        throw e                                     // never swallow cancellation
+    } catch (e: Exception) {
+        Log.w("REST", "loading $what failed", e)
+        _error.value = "Could not load $what: ${e.message}"
+        null
+    }
 
     // as Flow it looks similar to this
     //    private val _users = repository.fetchUsers()
     //        .stateIn(viewModelScope, started = SharingStarted.Lazily, initialValue = Result.success(emptyList()))
 
     private val _selectedUserId = MutableStateFlow<Int?>(null)
-    val selectedUserId: StateFlow<Int?> = _selectedUserId
+    val selectedUserId: StateFlow<Int?> = _selectedUserId.asStateFlow()
 
     // instead of
     //      private val _posts = MutableStateFlow<List<UserPostModel>>(emptyList())
     //      val posts: StateFlow<List<UserPostModel>> = _posts
     // we could refresh the posts when the user is selected
+    // mapLatest: a new selection cancels a still running request for the previous one
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val _posts: StateFlow<List<UserPostModel>> = _selectedUserId.flatMapLatest { userId ->
-        if (userId == null) flowOf(emptyList())
-        else flowOf(repository.fetchUserPosts(userId))
+    private val _posts: StateFlow<List<UserPostModel>> = _selectedUserId.mapLatest { userId ->
+        if (userId == null) emptyList()
+        else loadOrNull("posts") { repository.fetchUserPosts(userId) } ?: emptyList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val posts: StateFlow<List<UserPostModel>> = _posts
 
     init {
         viewModelScope.launch {
-            _users.value = repository.fetchUsers()
+            _users.value = loadOrNull("users") { repository.fetchUsers() } ?: emptyList()
         }
     }
 
@@ -112,8 +132,9 @@ When to Use MutableState
     integration with other reactive flows.
 
 When to Use StateFlow
-  - Lifecycle Awareness is Crucial: Observers (e.g., composables) can stop observing,
-    and you don’t want unnecessary emissions.
+  - Lifecycle Awareness is Crucial: StateFlow itself is not lifecycle-aware, but together with
+    collectAsStateWithLifecycle (UI stops collecting in the background) and
+    SharingStarted.WhileSubscribed (upstream stops without collectors) it avoids unnecessary work.
   - Complex Data Transformations: You need operators like map, combine, or flatMapLatest
     to manage the state.
   - Reactive Streams: You’re already working with Flow or other reactive streams in

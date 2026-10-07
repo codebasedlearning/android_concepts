@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu      // an extension on the box scope since material3 1.5
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -29,7 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.fh_aachen.android.room.ui.theme.MyAppTheme
 
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -82,8 +83,10 @@ fun DatabaseScreen() {
 
     val viewModel: ShopViewModel = viewModel()
 
-    var catId by remember { mutableStateOf(UUID.randomUUID()) }
-    var productId by remember { mutableStateOf(UUID.randomUUID()) }
+    // nothing selected yet: null, not a random UUID (a product with a random category id
+    // would violate the foreign key)
+    var catId by remember { mutableStateOf<UUID?>(null) }
+    var productId by remember { mutableStateOf<UUID?>(null) }
     var productName by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -92,8 +95,9 @@ fun DatabaseScreen() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             CategoryComboBox(modifier = Modifier.weight(0.7f)) { selectedItem ->
-                viewModel.getAllProductsFromCategory(selectedItem.id)
+                viewModel.selectCategory(selectedItem.id)
                 catId = selectedItem.id
+                productId = null
             }
             Row(
                 modifier = Modifier.weight(0.3f),
@@ -120,8 +124,10 @@ fun DatabaseScreen() {
                     iconResourceId = R.drawable.baseline_add_24,
                     contentDescription = "Plus"
                 ) {
-                    productName = "New Product no ${Random.nextInt(from = 1000, until = 9999)}"
-                    viewModel.addProduct(productName, catId)
+                    catId?.let { id ->          // only with a selected category
+                        productName = "New Product no ${Random.nextInt(from = 1000, until = 9999)}"
+                        viewModel.addProduct(productName, id)
+                    }
                 }
             }
         }
@@ -142,9 +148,9 @@ fun DatabaseScreen() {
             )
             CircularIconButton(
                 iconResourceId = R.drawable.baseline_check_24,
-                contentDescription = "Plus"
+                contentDescription = "Update"
             ) {
-                viewModel.updateProductLabel(productId, productName)
+                productId?.let { id -> viewModel.updateProductLabel(id, productName) }
             }
         }
         Row(
@@ -164,7 +170,7 @@ fun DatabaseScreen() {
 @Composable
 fun CategoryComboBox(modifier: Modifier = Modifier, onItemSelected: (CategoryEntity) -> Unit) {
     val viewModel: ShopViewModel = viewModel()
-    val categories by viewModel.categories.collectAsState()     // collect categories as state
+    val categories by viewModel.categories.collectAsStateWithLifecycle()     // collect categories as state
 
     var expanded by remember { mutableStateOf(false) }          // controls dropdown visibility
     var selectedOption by remember { mutableStateOf("") }       // holds selected option
@@ -196,7 +202,7 @@ fun CategoryComboBox(modifier: Modifier = Modifier, onItemSelected: (CategoryEnt
 @Composable
 fun ProductComboBox(modifier: Modifier = Modifier, onItemSelected: (ProductEntity) -> Unit) {
     val viewModel: ShopViewModel = viewModel()
-    val products by viewModel.products.collectAsState()         // collect products as state
+    val products by viewModel.products.collectAsStateWithLifecycle()         // collect products as state
 
     var expanded by remember { mutableStateOf(false) }          // controls dropdown visibility
     var selectedOption by remember { mutableStateOf("") }       // holds selected option

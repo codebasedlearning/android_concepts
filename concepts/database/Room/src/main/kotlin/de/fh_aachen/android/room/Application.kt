@@ -10,8 +10,9 @@ import de.fh_aachen.android.room.model.ShopRepository
  * For an Android app that needs a local relational DB:
  * Default choice:
  *  – Room over SQLite (AndroidX, fully supported, good tooling).
- * If you’re doing Kotlin Multiplatform Mobile (KMM) or want cross-platform DB:
- *  – SQLDelight.
+ * If you’re doing Kotlin Multiplatform (KMP, formerly 'KMM') or want a cross-platform DB:
+ *  – Room as well: KMP support since Room 2.7, and Room 3 (androidx.room3) is KMP-first.
+ *  – SQLDelight (SQL first: you write the SQL, it generates typesafe Kotlin).
  * If you’re writing a server in Kotlin:
  *  – Exposed, JPA, etc., but that’s off-device.
  */

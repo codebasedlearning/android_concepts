@@ -1,6 +1,5 @@
 package de.fh_aachen.android.composable_based_app.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

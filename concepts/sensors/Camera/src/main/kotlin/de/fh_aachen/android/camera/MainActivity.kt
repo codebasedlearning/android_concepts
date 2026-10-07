@@ -4,6 +4,7 @@ package de.fh_aachen.android.camera
 
 import android.Manifest
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -36,7 +37,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -68,10 +71,12 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /*
 You can also use 'adb' to manipulate the permissions:
-    /Users/voss/Library/Android/sdk/platform-tools/adb shell pm revoke de.fh_aachen.android.camera android.permission.CAMERA
+    adb shell pm revoke de.fh_aachen.android.camera android.permission.CAMERA
 or general
     adb shell pm revoke your.package.name android.permission.the_one
 Be aware that the app might be closed after the permission is revoked.
@@ -80,6 +85,10 @@ A permission is not only granted or denied. In some cases the user should get
 a so-called 'rationale'. This is essentially an explanation or justification provided to the user,
 explaining why the app needs a particular permission. This helps users understand the purpose of
 the permission, making them more likely to accept it if they see a clear reason behind the request.
+
+Note on TakePicture (ACTION_IMAGE_CAPTURE): the camera app takes the photo, so normally no permission
+is needed (see Photo1). But if an app *declares* CAMERA in its manifest, like this one, the intent
+throws a SecurityException unless CAMERA is granted. That's why CameraScreen checks it first.
 */
 
 enum class Screen { Home, Permission, Camera }
@@ -139,8 +148,8 @@ fun PermissionScreen() {
     /*
     LaunchedEffect is a composable function in Jetpack Compose that allows you to run
     suspendable side effects (like coroutine operations) in response to changes in the composition.
-    It provides a way to launch coroutines within the composable scope in a safe,
-    lifecycle-aware way.
+    It is composition-aware (cancelled when it leaves the composition or the key changes),
+    not lifecycle-aware: it keeps running while the app is in the background.
 
     Here, hasCameraPermission does not update automatically when cameraPermissionState changes,
     but with this little helper it does.
@@ -189,26 +198,43 @@ fun PermissionScreen() {
     }
 }
 
+// Decodes a down-sampled bitmap (1/sampleSize per side); a full-resolution photo can be
+// 50+ MB as a Bitmap. Call it off the main thread.
+private fun decodeSampled(context: Context, uri: Uri, sampleSize: Int = 4): ImageBitmap? =
+    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+        val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+        BitmapFactory.decodeStream(inputStream, null, options)?.asImageBitmap()
+    }
+
 @Composable
 fun CameraScreen() {
     val context = LocalContext.current
-    if (!isCameraPermissionGranted(context)) {
-        val navController = LocalNavController.current
-        navController.navigate(Screen.Permission.name)
+    val navController = LocalNavController.current
+    val granted = remember { isCameraPermissionGranted(context) }
+
+    // Navigation is a side effect: never call navigate() directly in the composable body,
+    // it would run on every recomposition.
+    LaunchedEffect(granted) {
+        if (!granted) navController.navigate(Screen.Permission.name)
     }
+    if (!granted) return
 
     // see also Manifest for permissions and file providers
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    // rememberSaveable: the camera app runs in another process; if our Activity is recreated
+    // meanwhile (rotation, process death), a plain 'remember' would lose the target URI.
+    var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var captureCount by rememberSaveable { mutableIntStateOf(0) }
     var capturedImage by remember { mutableStateOf<ImageBitmap?>(null) }
 
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) { success ->
-        if (success) {
-            capturedImage = imageUri?.let { uri ->
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    android.graphics.BitmapFactory.decodeStream(inputStream).asImageBitmap()
-                }
-            }
-        }
+        if (success) captureCount++
+    }
+
+    // decode in the background whenever a new photo was taken (and again after recreation)
+    LaunchedEffect(captureCount) {
+        val uri = imageUri ?: return@LaunchedEffect
+        if (captureCount == 0) return@LaunchedEffect
+        capturedImage = withContext(Dispatchers.IO) { decodeSampled(context, uri) }
     }
 
     fun createImageFile(context: Context): Uri? {

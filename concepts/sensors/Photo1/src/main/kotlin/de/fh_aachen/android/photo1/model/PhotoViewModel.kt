@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 
-const val TAG = "PREFS"
+const val TAG = "PHOTO"
 
 class PhotoViewModel : ViewModel() {
 

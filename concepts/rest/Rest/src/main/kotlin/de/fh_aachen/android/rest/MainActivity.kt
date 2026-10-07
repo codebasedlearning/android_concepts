@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -75,33 +75,39 @@ fun LoginScreen() {
 
 @Composable
 fun UserActivityScreen(viewModel: UserActivityViewModel) {
-    val users by viewModel.users.collectAsState()
-    val posts by viewModel.posts.collectAsState()
-    val selectedUserId by viewModel.selectedUserId.collectAsState()
+    val users by viewModel.users.collectAsStateWithLifecycle()
+    val posts by viewModel.posts.collectAsStateWithLifecycle()
+    val selectedUserId by viewModel.selectedUserId.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
-    Row(Modifier.fillMaxSize()) {
-        Column(Modifier.weight(1f).padding(16.dp).background(Color(0x80ff0000))) {
-            Text("Users",
-                modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth().background(Color(0x80000000)),
-                color = Color.White, textAlign = TextAlign.Center, fontSize = 24.sp)
-            LazyColumn {
-                items(users) { user ->
-                    UserRow(
-                        user = user,
-                        isSelected = user.id == selectedUserId,
-                        onClick = { viewModel.selectUser(user.id) }
-                    )
+    Column(Modifier.fillMaxSize()) {
+        error?.let {
+            Text(it, color = Color.White, modifier = Modifier.fillMaxWidth().background(Color(0xccaa0000)).padding(8.dp))
+        }
+        Row(Modifier.fillMaxSize()) {
+            Column(Modifier.weight(1f).padding(16.dp).background(Color(0x80ff0000))) {
+                Text("Users",
+                    modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth().background(Color(0x80000000)),
+                    color = Color.White, textAlign = TextAlign.Center, fontSize = 24.sp)
+                LazyColumn {
+                    items(users) { user ->
+                        UserRow(
+                            user = user,
+                            isSelected = user.id == selectedUserId,
+                            onClick = { viewModel.selectUser(user.id) }
+                        )
+                    }
                 }
             }
-        }
 
-        Column(Modifier.weight(2f).padding(16.dp).background(Color(0xa000ffff))) {
-            Text("Posts by User ${selectedUserId ?: "-"}",
-                modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth().background(Color(0x80000000)),
-                color = Color.White, textAlign = TextAlign.Center, fontSize = 24.sp
-            )
-            LazyColumn {
-                items(posts) { post -> PostRow(post = post) }
+            Column(Modifier.weight(2f).padding(16.dp).background(Color(0xa000ffff))) {
+                Text("Posts by User ${selectedUserId ?: "-"}",
+                    modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth().background(Color(0x80000000)),
+                    color = Color.White, textAlign = TextAlign.Center, fontSize = 24.sp
+                )
+                LazyColumn {
+                    items(posts) { post -> PostRow(post = post) }
+                }
             }
         }
     }

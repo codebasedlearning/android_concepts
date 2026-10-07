@@ -4,17 +4,17 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("android-conventions")               // alias(libs.plugins.android.conventions) does not work, however...
+    alias(libs.plugins.fhac.android.conventions)
 }
 
 android {
     namespace = "de.fh_aachen.android.composable_based_app"
-    // is set by android-conventions
+    // is set by fhac.android.conventions
     // compileSdk = 36
 
     defaultConfig {
         applicationId = "de.fh_aachen.android.composable_based_app"
-        // is set by android-conventions
+        // is set by fhac.android.conventions
         // minSdk = 27
         // targetSdk = 36
         versionCode = 1
@@ -22,7 +22,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    /* all set by android-conventions
+    /* all set by fhac.android.conventions
     buildTypes {
         release {
             isMinifyEnabled = false

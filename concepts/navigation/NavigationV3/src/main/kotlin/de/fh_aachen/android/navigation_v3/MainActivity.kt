@@ -90,7 +90,8 @@ fun MainScreen() {
             backStack = backStack,
             onBack = { backStack.removeLastOrNull() },
             entryDecorators = listOf(
-                // manage saved state + ViewModel lifetimes per entry
+                // keeps rememberSaveable state per entry; for ViewModels scoped to an entry
+                // add rememberViewModelStoreNavEntryDecorator() (lifecycle-viewmodel-navigation3)
                 rememberSaveableStateHolderNavEntryDecorator()
             ),
             entryProvider = entryProvider<NavKey> {
@@ -112,17 +113,23 @@ fun MainScreen() {
     }
 }
 
+// The back stack is just a list we own: for top-level destinations we don't push
+// the same key twice in a row (cf. navigateToTopLevel in UiTools for Navigation 2).
+fun NavBackStack<NavKey>.navigateTo(key: NavKey) {
+    if (lastOrNull() != key) add(key)
+}
+
 @Composable
 fun BottomAppBarWithButtons(navBackStack: NavBackStack<NavKey>) {
     BottomAppBar(
         actions = {
-            IconButton(onClick = { navBackStack.add(Home) }) {
+            IconButton(onClick = { navBackStack.navigateTo(Home) }) {
                 Icon(imageVector = Icons.Default.Home, contentDescription = "Home")
             }
-            IconButton(onClick = { navBackStack.add(Settings) }) {
+            IconButton(onClick = { navBackStack.navigateTo(Settings) }) {
                 Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings")
             }
-            IconButton(onClick = { navBackStack.add(CameraNavKeyScreen) }) {
+            IconButton(onClick = { navBackStack.navigateTo(CameraNavKeyScreen) }) {
                 Icon(imageVector = ImageVector.vectorResource(id = CameraNavKeyScreen.iconId), contentDescription = "Camera")
             }
         },
@@ -135,7 +142,7 @@ fun HomeScreen(navBackStack: NavBackStack<NavKey>) {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.home_city),
-            contentDescription = "Background",
+            contentDescription = null,      // decorative
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // This scales the image to fill the entire box
         )
@@ -156,7 +163,7 @@ fun SettingsScreen(goHome: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.settings_garage),
-            contentDescription = "Background",
+            contentDescription = null,      // decorative
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // This scales the image to fill the entire box
         )

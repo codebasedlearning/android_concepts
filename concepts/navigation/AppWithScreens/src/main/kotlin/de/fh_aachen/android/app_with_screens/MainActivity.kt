@@ -14,7 +14,11 @@ import de.fh_aachen.android.ui_tools.NavScaffold
 import de.fh_aachen.android.ui_tools.NavScreen
 import de.fh_aachen.android.ui_tools.navScreensOf
 
-/*
+/* ---- TOC ----
+   Show the first Screens.
+ */
+
+/* --- UI ---
  * We use the UI library to encapsulate the details of the navigation and just provide
  * a couple of screens to (Nav)Scaffold.
  *

@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("android-conventions")
+    alias(libs.plugins.fhac.android.conventions)
 }
 
 android {
@@ -23,13 +23,11 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     //implementation(libs.material)
-    implementation(libs.androidx.material3)
-    implementation("androidx.compose.material:material-icons-extended:1.6.7")
     //implementation("androidx.compose.material:material-icons-extended:1.13.0")
     //implementation("androidx.compose.material:material:1.9.3")
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.activity.compose)
     implementation(project(":libs-UiTools"))
     //implementation("androidx.compose.material3:material3-icons-extended:1.13.0")
     testImplementation(libs.junit)
@@ -40,5 +38,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation("io.coil-kt:coil-compose:2.7.0")
+    // Coil 3 (group io.coil-kt.coil3, package coil3); content:// and file URIs work without a network artifact
+    implementation(libs.coil.compose)
 }

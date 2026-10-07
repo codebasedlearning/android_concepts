@@ -11,6 +11,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.BatteryManager
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -25,21 +26,22 @@ Benefits of callbackFlow:
     as a reactive Flow, which fits well with Kotlin’s coroutine-based reactive programming approach.
     Instead of managing callbacks manually, you get a Flow that emits values as they arrive,
     which simplifies code.
-2. Asynchronous and Cold by Design:
-    callbackFlow is cold. It only starts collecting data when you actively collect the Flow,
-    making it ideal for event streams that might otherwise be resource-intensive if started
-    immediately. It also runs asynchronously within a coroutine scope, so it integrates
-    seamlessly with suspend functions and structured concurrency, avoiding blocking the main thread.
+2. Cold by Design:
+    callbackFlow is cold. It only starts (registers the listener) when you actively collect
+    the Flow, making it ideal for event streams that might otherwise be resource-intensive if
+    started immediately. The block runs in the collector's coroutine context (here Main), and
+    the listener callbacks arrive on the main looper unless you pass a Handler - it is not
+    automatically a background thread.
 3. Automatic Resource Management:
     With callbackFlow, you can use awaitClose to manage resources automatically. When the
     Flow collection is canceled (e.g., due to a lifecycle change), awaitClose is triggered,
     allowing you to clean up resources like receivers, listeners, or subscriptions.
     This helps prevent memory leaks and resource mismanagement, which are common issues in
     callback-based APIs.
-4. Error Handling with Exception Safety:
-    callbackFlow handles exceptions internally, providing a safe environment for handling and
-    retrying errors if necessary. This is especially helpful in Android, where network or
-    event-based data might throw errors, ensuring that your Flow won’t crash unexpectedly.
+4. Error Handling:
+    Exceptions thrown inside callbackFlow are not swallowed, they propagate to the collector
+    (and crash it unless handled). Being a Flow, you handle them with the usual operators
+    like catch { } or retry { }, downstream of the callbackFlow.
 5. Flexible Emission Control:
     Inside callbackFlow, you can control when and how often values are emitted using trySend.
     This lets you handle cases where data is intermittent or event-based
@@ -61,8 +63,10 @@ class SensorRepository(val context: WeakReference<Context>) {
             override fun onSensorChanged(event: SensorEvent?) {
                 event?.let {
                     if (/*it.sensor==accelerometer && */ !prevData.contentEquals(it.values)) {
-                        trySend(it.values)
+                        // The framework reuses the event and its 'values' array, so send a copy;
+                        // the collector may run later, when 'values' already holds newer data.
                         prevData = it.values.copyOf()
+                        trySend(prevData.copyOf())
                     }
                 }
             }
@@ -87,8 +91,10 @@ class SensorRepository(val context: WeakReference<Context>) {
             override fun onSensorChanged(event: SensorEvent?) {
                 event?.let {
                     if (/*it.sensor==gyroscope && */ !prevData.contentEquals(it.values)) {
-                        trySend(it.values)
+                        // The framework reuses the event and its 'values' array, so send a copy;
+                        // the collector may run later, when 'values' already holds newer data.
                         prevData = it.values.copyOf()
+                        trySend(prevData.copyOf())
                     }
                 }
             }
@@ -129,8 +135,13 @@ class SensorRepository(val context: WeakReference<Context>) {
             }
         }
 
-        // register the receiver with the ACTION_BATTERY_CHANGED filter
-        context.get()?.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        // register the receiver with the ACTION_BATTERY_CHANGED filter; since Android 14 receivers
+        // registered at runtime declare whether other apps may send to them (system broadcasts
+        // like this one are delivered either way)
+        context.get()?.let {
+            ContextCompat.registerReceiver(it, batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED)
+        }
 
         // ensure the receiver is unregistered when the flow is closed
         awaitClose { context.get()?.unregisterReceiver(batteryReceiver) }

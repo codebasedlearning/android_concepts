@@ -58,7 +58,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 fun BackgroundImage(id: Int) {
     Image(
         painter = painterResource(id = id),
-        contentDescription = "Background",
+        contentDescription = null,          // decorative, so TalkBack skips it
         modifier = Modifier.fillMaxSize(),
         contentScale = ContentScale.Crop
     )

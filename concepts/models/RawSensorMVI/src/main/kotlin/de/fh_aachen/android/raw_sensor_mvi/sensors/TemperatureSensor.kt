@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /*
@@ -88,7 +89,7 @@ data class TemperatureViewState(
  * User actions only here; sensor updates are handled internally.
  */
 sealed interface TemperatureIntent {
-    object CalibrateClicked : TemperatureIntent
+    data object CalibrateClicked : TemperatureIntent      // 'data object': readable toString()
 
     // data class SetThreshold(val value: Int) : TemperatureIntent
     // usage: TemperatureIntent.SetThreshold(42)
@@ -99,8 +100,8 @@ sealed interface TemperatureIntent {
  *
  * A sealed interface means:
  *  – all possible intents must be known at compile time
- *  – they must live in the same file
- *  – the compiler will warn you if your when() is missing a case.
+ *  – they must live in the same package and module (since Kotlin 1.5; before: same file)
+ *  – a when() over them must be exhaustive, a missing case is a compile error (no 'else' needed).
  *
  * An interface lets you mix:
  *  – objects (stateless 'events')
@@ -140,16 +141,19 @@ class TemperatureMviViewModel : ViewModel() {
         }
     }
 
-    private fun reduceSensorData(data: SensorData) {
-        _state.value = _state.value.copy(
-            temperature = data.rawValue,
-            isCalibrating = false,  // when we get new values, we are done
-        )
-    }
+    // Reducers are pure functions: old State + input -> new State. 'update' applies them
+    // atomically (no lost updates if two coroutines change the state at the same time).
 
-    private fun reduceCalibrate() {
-        _state.value = _state.value.copy(
-            isCalibrating = true,
-        )
-    }
+    private fun reduceSensorData(data: SensorData) = _state.update { reduce(it, data) }
+
+    private fun reduceCalibrate() = _state.update { reduce(it, TemperatureIntent.CalibrateClicked) }
+}
+
+private fun reduce(state: TemperatureViewState, data: SensorData) = state.copy(
+    temperature = data.rawValue,
+    isCalibrating = false,  // when we get new values, we are done
+)
+
+private fun reduce(state: TemperatureViewState, intent: TemperatureIntent) = when (intent) {
+    TemperatureIntent.CalibrateClicked -> state.copy(isCalibrating = true)
 }

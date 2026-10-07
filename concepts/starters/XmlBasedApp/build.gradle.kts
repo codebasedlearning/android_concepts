@@ -3,26 +3,26 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    id("android-conventions")
+    // no Compose compiler plugin: this starter is the 'old way' with XML layouts and Views only
+    alias(libs.plugins.fhac.android.conventions)
 }
 
 android {
     namespace = "de.fh_aachen.android.xml_based_app"
-    // is set by android-conventions
-    // compileSdk = 36
+    // is set by fhac.android.conventions
+    // compileSdk = 37
 
     defaultConfig {
         applicationId = "de.fh_aachen.android.xml_based_app"
-        // is set by android-conventions
+        // is set by fhac.android.conventions
         // minSdk = 27
-        // targetSdk = 36
+        // targetSdk = 37
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    /* all set by android-conventions
+    /* all set by fhac.android.conventions
     buildTypes {
         release {
             isMinifyEnabled = false     // no shrinking/obfuscation in this course project
@@ -32,10 +32,6 @@ android {
         }
     }
 
-    buildFeatures {
-        compose = true
-    }
-
     kotlin {
         jvmToolchain(21)
     }
@@ -43,23 +39,12 @@ android {
 }
 
 dependencies {
-// old dependecies
-implementation("androidx.appcompat:appcompat:1.7.1")
-implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-implementation("com.google.android.material:material:1.12.0")
-implementation(libs.androidx.core.ktx)
-implementation(libs.androidx.lifecycle.runtime.ktx)
-implementation(libs.androidx.activity.compose)
-implementation(platform(libs.androidx.compose.bom))
-implementation(libs.androidx.ui)
-implementation(libs.androidx.ui.graphics)
-implementation(libs.androidx.ui.tooling.preview)
-implementation(libs.androidx.material3)
-testImplementation(libs.junit)
-androidTestImplementation(libs.androidx.junit)
-androidTestImplementation(libs.androidx.espresso.core)
-androidTestImplementation(platform(libs.androidx.compose.bom))
-androidTestImplementation(libs.androidx.ui.test.junit4)
-debugImplementation(libs.androidx.ui.tooling)
-debugImplementation(libs.androidx.ui.test.manifest)
+    // the 'View world': AppCompat, ConstraintLayout and Material Components (XML themes and widgets)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.material)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }

@@ -39,11 +39,14 @@ State and Recomposition:
 State Management:
   - To trigger recomposition, you need to store UI-related data in a way that Compose can
     track its changes. This is where state management comes in.
-  - mutableStateOf: mutableStateOf is a composable function that creates a mutable state holder.
-    It allows you to store a value and notify Compose when that value changes.
-  - remember: remember is a composable function that ensures that the state is preserved across
-    recompositions. It stores the state value in a composition-local storage, so it's not recreated
-    every time the composable function is executed.
+  - mutableStateOf: creates an observable state holder (snapshot state). It is a plain function,
+    not a composable, so it can be used anywhere, e.g. in a ViewModel. Compose notices which
+    composables read the value and recomposes them when it changes.
+  - remember: a composable function that keeps a value across recompositions. The value is stored
+    in the composition (the 'slot table') at the position of the call, so it is not recreated
+    every time the composable function is executed. Not to be confused with CompositionLocal.
+  - rememberSaveable additionally survives configuration changes and process death (Bundle);
+    a ViewModel survives configuration changes without serialization.
  */
 
 class MainActivity : ComponentActivity() {
@@ -61,85 +64,91 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
-    @Composable
-    fun RowWithEditorAndButtonA() {
-        Row {
-            /*
-            'remember' keeps a value (of any type) consistent across recompositions (only created once)
-            'MutableState' holds a value and Compose will automatically observe changes
-            'by' declares a Kotlin delegation property and has the type of the getter, here String
+@Composable
+fun RowWithEditorAndButtonA() {
+    Row {
+        /*
+        'remember' keeps a value (of any type) consistent across recompositions (only created once)
+        'MutableState' holds a value and Compose will automatically observe changes
+        'by' declares a Kotlin delegation property and has the type of the getter, here String
 
-            like this:
+        like this:
 
-            val rememberedValues = mutableMapOf<ComposableFunction, Any>()
-            fun <T> remember(block: () -> T): T {
-                if (!rememberedValues.containsKey(currentComposable)) {
-                    rememberedValues[currentComposable] = block()
-                }
-                return rememberedValues[currentComposable] as T
+        val rememberedValues = mutableMapOf<ComposableFunction, Any>()
+        fun <T> remember(block: () -> T): T {
+            if (!rememberedValues.containsKey(currentComposable)) {
+                rememberedValues[currentComposable] = block()
             }
-
-            and "by" resolves to
-
-            val state = remember { mutableStateOf("") }
-            var input: String
-                get() = state.value
-                set(v) { state.value = v }
-
-            see also below
-            */
-            var input by remember { mutableStateOf("") }
-
-            Text("Data A:", modifier = Modifier.alignByBaseline())
-            Spacer(Modifier.width(8.dp))
-            TextField(
-                value = input,
-                onValueChange = { newText -> input = newText },
-                label = { Text("Enter text") },
-                modifier = Modifier.alignByBaseline().width(150.dp),
-            )
-            Button(onClick = { Log.v(TAG, "Data A clicked") }) { Text(text = input) }
-            Spacer(Modifier.width(8.dp))
-            InputText(input = "---", log = "A")
-            InputText(input = input, log = "A")
+            return rememberedValues[currentComposable] as T
         }
-        // runs after every recomposition - compare the input-calls
-        SideEffect { Log.d(TAG, "Row A Recomposition") }
-    }
 
-    @Composable
-    fun InputText(input: String, log: String) {
-        SideEffect { Log.d(TAG, "Input $log Recomposition '$input'") }
-        Text(text = input)
-    }
+        and "by" resolves to
 
-    @Composable
-    fun RowWithEditorAndButtonB() {
-        Row {
-            // input is now of type MutableState, needed for InputEdit
-            var input = remember { mutableStateOf("") }
-            Text(
-                "Data B:",
-                modifier = Modifier.alignByBaseline()
-            )
-            Spacer(Modifier.width(8.dp))
-            InputEdit(input, Modifier.alignByBaseline())
-            Button(onClick = { Log.v(TAG, "Data B clicked") }) { Text(text = input.value) }
-            InputText(input = "+++", log = "A")
-            InputText(input = input.value, log = "B")
-        }
-        SideEffect { Log.d(TAG, "Row B Recomposition") }
-    }
+        val state = remember { mutableStateOf("") }
+        var input: String
+            get() = state.value
+            set(v) { state.value = v }
 
-    @Composable
-    fun InputEdit(input: MutableState<String>, modifier: Modifier = Modifier) {
+        see also below
+        */
+        var input by remember { mutableStateOf("") }
+
+        Text("Data A:", modifier = Modifier.alignByBaseline())
+        Spacer(Modifier.width(8.dp))
         TextField(
-            value = input.value,
-            onValueChange = { newText -> input.value = newText },
+            value = input,
+            onValueChange = { newText -> input = newText },
             label = { Text("Enter text") },
-            modifier = modifier.width(150.dp),
+            modifier = Modifier.alignByBaseline().width(150.dp),
         )
+        Button(onClick = { Log.v(TAG, "Data A clicked") }) { Text(text = input) }
+        Spacer(Modifier.width(8.dp))
+        InputText(input = "---", log = "A")
+        InputText(input = input, log = "A")
     }
+    // runs after every recomposition - compare the input-calls
+    SideEffect { Log.d(TAG, "Row A Recomposition") }
+}
 
+@Composable
+fun InputText(input: String, log: String) {
+    SideEffect { Log.d(TAG, "Input $log Recomposition '$input'") }
+    Text(text = input)
+}
+
+@Composable
+fun RowWithEditorAndButtonB() {
+    Row {
+        // input is now of type MutableState, needed for InputEdit
+        val input = remember { mutableStateOf("") }
+        Text(
+            "Data B:",
+            modifier = Modifier.alignByBaseline()
+        )
+        Spacer(Modifier.width(8.dp))
+        InputEdit(input, Modifier.alignByBaseline())
+        Button(onClick = { Log.v(TAG, "Data B clicked") }) { Text(text = input.value) }
+        InputText(input = "+++", log = "B")
+        InputText(input = input.value, log = "B")
+    }
+    SideEffect { Log.d(TAG, "Row B Recomposition") }
+}
+
+/*
+ * Passing a MutableState down works, but the usual pattern is 'state hoisting':
+ * the caller owns the state and passes the value plus an event callback, e.g.
+ *      @Composable
+ *      fun InputEdit(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier)
+ * This keeps InputEdit stateless, reusable and easy to preview and test.
+ */
+@Composable
+fun InputEdit(input: MutableState<String>, modifier: Modifier = Modifier) {
+    TextField(
+        value = input.value,
+        onValueChange = { newText -> input.value = newText },
+        label = { Text("Enter text") },
+        modifier = modifier.width(150.dp),
+    )
 }

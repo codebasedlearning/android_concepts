@@ -2,10 +2,12 @@
 
 import kotlin.io.path.*
 
-// This sets 'android.compileSdk', 'android.defaultConfig.minSdk' and 'android.defaultConfig.targetSdk' for all projects and libs.
-includeBuild("build-logic")
-
 pluginManagement {
+    // Our convention plugin 'fhac.android.conventions' (see build-logic). It sets compileSdk, minSdk,
+    // targetSdk and the JVM toolchain for all apps and libs; the values come from gradle.properties.
+    // An included build that provides plugins belongs here, inside pluginManagement.
+    includeBuild("build-logic")
+
     repositories {
         google {
             content {
@@ -17,6 +19,9 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+}
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 dependencyResolutionManagement {

@@ -1,7 +1,5 @@
 // (C) A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
 
-@file:OptIn(ExperimentalStdlibApi::class)
-
 package de.fh_aachen.android.modal_dialog.screens
 
 import androidx.compose.animation.AnimatedVisibility
@@ -92,7 +90,7 @@ fun DialogScreen() {
     }
 
     if (openAlert) {
-        ConfirmDeleteDialog(
+        ConfirmSaveDialog(
             onDismiss = { openAlert = false },
             onConfirm = { openAlert = false }
         )
@@ -140,14 +138,14 @@ fun ModernModalDialogNoBlur(
 }
 
 @Composable
-fun ConfirmDeleteDialog(
+fun ConfirmSaveDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Save item?") },
-        text = { Text("This action cannot be undone.") },
+        text = { Text("The item will be stored on this device.") },
         confirmButton = {
             TextButton(onClick = onConfirm) { Text("Save") }
         },

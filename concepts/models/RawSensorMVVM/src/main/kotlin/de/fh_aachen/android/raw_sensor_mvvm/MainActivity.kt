@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.fh_aachen.android.raw_sensor_mvvm.sensors.TemperatureViewModel
 import de.fh_aachen.android.raw_sensor_mvvm.ui.theme.CityColor
@@ -75,7 +75,7 @@ fun HomeScreen() {
 @Composable
 fun CityBox() {
     val city: TemperatureViewModel = viewModel()
-    val temperature by city.temperature.collectAsState()
+    val temperature by city.temperature.collectAsStateWithLifecycle()   // stops collecting while the app is in the background
 
     Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).fillMaxWidth(0.6f).height(60.dp).background(CityColor)) {
         Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).fillMaxHeight().background(CityColor),

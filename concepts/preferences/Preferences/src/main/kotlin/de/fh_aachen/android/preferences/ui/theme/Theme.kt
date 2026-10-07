@@ -14,7 +14,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.fh_aachen.android.preferences.model.SettingsViewModel
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -57,7 +57,7 @@ fun MyAppTheme(
     viewModel: SettingsViewModel = viewModel(),
     content: @Composable () -> Unit
 ) {
-    val prefs by viewModel.userPreferences.collectAsState()
+    val prefs by viewModel.userPreferences.collectAsStateWithLifecycle()
 
     val darkTheme = prefs.darkMode
     val fontScale = prefs.fontScale

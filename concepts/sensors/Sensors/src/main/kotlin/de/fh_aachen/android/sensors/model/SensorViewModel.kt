@@ -4,54 +4,36 @@ package de.fh_aachen.android.sensors.model
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import de.fh_aachen.android.sensors.SensorsApplication
 import de.fh_aachen.android.sensors.service_locator.ServiceLocator
-import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.stateIn
 
-class SensorViewModel() : ViewModel() {
+class SensorViewModel : ViewModel() {
     // instead of DI
     private val sensorRepository: SensorRepository = ServiceLocator.sensorRepository
 
-    // usual combination of MutableState and State (read-only)
-    private val _accelerometerData = MutableStateFlow(floatArrayOf(0f, 0f, 0f))
-    val accelerometerData: StateFlow<FloatArray> = _accelerometerData
-
-    private val _gyroscopeData = MutableStateFlow(floatArrayOf(0f, 0f, 0f))
-    val gyroscopeData: StateFlow<FloatArray> = _gyroscopeData
-
-    private val _batteryData = MutableStateFlow(0f)
-    val batteryData: StateFlow<Float> = _batteryData
-
     /*
-    Here launch uses 'Dispatchers.Main', an android specific dispatcher able to update UI elements
-    The collectLatest operator in Kotlin Flow is a special variant of collect that cancels the
-    previous collection if a new value is emitted before the previous one finishes processing
-    (that is the lambda).
-    This is particularly useful when dealing with fast or frequent data emissions, as it ensures
-    that only the most recent value is processed, while intermediate values are discarded.
+    The repository delivers cold flows (callbackFlow): a listener is registered only while
+    somebody collects. stateIn turns them into StateFlows held by the ViewModel:
+     - WhileSubscribed(5000) keeps the upstream (the sensor listener) active only while the UI
+       collects, plus 5 s, so a quick rotation does not unregister and re-register the sensors.
+     - In the UI, collectAsStateWithLifecycle stops collecting when the app goes to the
+       background (onStop) - so the sensors are switched off automatically, without overriding
+       onStart/onStop in the Activity.
+    A StateFlow also conflates: if values arrive faster than the UI reads them, only the
+    newest one is kept.
     */
-    fun startListening() {
-        viewModelScope.launch {
-            sensorRepository.startAccelerometerUpdates()
-                .collectLatest { data -> _accelerometerData.value = data.copyOf() }
-        }
-        viewModelScope.launch {
-            sensorRepository.startGyroscopeUpdates()
-                .collectLatest { data -> _gyroscopeData.value = data.copyOf() }
-        }
-        viewModelScope.launch {
-            sensorRepository.startBatteryUpdates()
-                .collectLatest { data -> _batteryData.value = data }
-        }
-    }
+    private val stopTimeout = SharingStarted.WhileSubscribed(5000)
 
-    fun stopListening() {
-        viewModelScope.coroutineContext.cancelChildren()
-    }
+    val accelerometerData: StateFlow<FloatArray> = sensorRepository.startAccelerometerUpdates()
+        .stateIn(viewModelScope, stopTimeout, floatArrayOf(0f, 0f, 0f))
+
+    val gyroscopeData: StateFlow<FloatArray> = sensorRepository.startGyroscopeUpdates()
+        .stateIn(viewModelScope, stopTimeout, floatArrayOf(0f, 0f, 0f))
+
+    val batteryData: StateFlow<Float> = sensorRepository.startBatteryUpdates()
+        .stateIn(viewModelScope, stopTimeout, 0f)
 
     fun getSensorList() = sensorRepository.getSensorList()
 }

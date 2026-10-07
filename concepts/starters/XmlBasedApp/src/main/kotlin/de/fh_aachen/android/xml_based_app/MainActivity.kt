@@ -15,7 +15,7 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.buttonPress).setOnClickListener {
             Toast.makeText(this@MainActivity, "First program!", Toast.LENGTH_SHORT).show()
-            Log.e("Main", getString(R.string.logcat_text))
+            Log.i("Main", getString(R.string.logcat_text))   // i = info; e (error) only for errors
         }
     }
 }
@@ -33,4 +33,10 @@ The New Way: Declarative UI (Jetpack Compose, SwiftUI, etc.)
   - Faster iteration: you can prototype UIs entirely in Kotlin.
   - Easier testing: composables are just functions.
   - Consistent look: Material 3 theming is unified and dynamic (supports Android 12+ color extraction).
+
+Edge-to-edge
+  Since targetSdk 35 Android draws every app edge-to-edge, i.e. behind the status and navigation
+  bars, XML apps included; from targetSdk 36 on there is no opt-out anymore. In the View world you
+  handle that with ViewCompat.setOnApplyWindowInsetsListener; in Compose, Scaffold passes the
+  insets as 'innerPadding'. Here the content is centered, so nothing gets covered.
  */

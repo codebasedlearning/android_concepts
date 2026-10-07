@@ -63,6 +63,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // MediaStore without permission works from Android 10 (API 29) on; on API 27/28 this
+        // would need WRITE_EXTERNAL_STORAGE (not covered here, the app is a temp version anyway).
         val outputOptions = ImageCapture.OutputFileOptions.Builder(
             contentResolver,
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
