@@ -63,7 +63,8 @@ fun ClickButton() {
         Button(onClick = {
             Log.w(TAG,"Watch out!")
         }) {
-            Text("Warn Me")
+            //Text("Warn Me")
+            Button(onClick = {}) { Text("Inside Me") }
         }
     }
 }

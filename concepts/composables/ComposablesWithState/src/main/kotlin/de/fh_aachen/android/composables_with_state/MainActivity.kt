@@ -23,6 +23,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
                     Column(modifier = Modifier.padding(innerPadding)) {
                         RowWithEditorAndButtonA()
                         RowWithEditorAndButtonB()
+                        RowWithEditorAndButtonC()
                     }
                 }
             }
@@ -91,9 +93,13 @@ fun RowWithEditorAndButtonA() {
             get() = state.value
             set(v) { state.value = v }
 
-        see also below
+        see examples below
         */
-        var input by remember { mutableStateOf("") }
+
+        // var input = ""                                   // not noticed/observed
+        // var input = mutableStateOf("")                   // observed but does not survive recomposition
+        // val input = remember { mutableStateOf("") }      // see below, needs .value (no String-type)
+        var input by remember { mutableStateOf("") }        // type String, but does not survive recreation
 
         Text("Data A:", modifier = Modifier.alignByBaseline())
         Spacer(Modifier.width(8.dp))
@@ -150,5 +156,32 @@ fun InputEdit(input: MutableState<String>, modifier: Modifier = Modifier) {
         onValueChange = { newText -> input.value = newText },
         label = { Text("Enter text") },
         modifier = modifier.width(150.dp),
+    )
+}
+
+@Composable
+fun RowWithEditorAndButtonC() {
+    Row {
+        var input by rememberSaveable { mutableStateOf("") }
+        Text(
+            "Data C:",
+            modifier = Modifier.alignByBaseline()
+        )
+        Spacer(Modifier.width(8.dp))
+        InputEdit(input, { newText -> input = newText }, Modifier.alignByBaseline())
+        Button(onClick = { Log.v(TAG, "Data C clicked") }) { Text(text = input) }
+        InputText(input = "+++", log = "C")
+        InputText(input = input, log = "C")
+    }
+    SideEffect { Log.d(TAG, "Row C Recomposition") }
+}
+
+@Composable
+fun InputEdit(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text("Enter text") },
+        modifier = modifier.width(150.dp)
     )
 }

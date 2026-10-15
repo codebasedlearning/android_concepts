@@ -2,7 +2,6 @@
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     // no Compose compiler plugin: this starter is the 'old way' with XML layouts and Views only
     alias(libs.plugins.fhac.android.conventions)
 }

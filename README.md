@@ -27,7 +27,7 @@ the convention plugin in `build-logic`; all versions live in `gradle/libs.versio
 | Folder | Modules | Topics |
 | --- | --- | --- |
 | `starters` | XmlBasedApp, ComposableBasedApp | Views + XML vs. Compose |
-| `composables` | TheIdeaOfComposables, ComposableExamples, ComposablesWithState | composables, layouts, modifiers, state, recomposition |
+| `composables` | TheIdeaOfComposables, ComposableExamples, ComposablesWithState, ComposableCalculator | composables, layouts, modifiers, state, recomposition, state hoisting |
 | `navigation` | NavigationBasics, NavigationWithDrawer, AppWithScreens, NavigationV3 | Navigation Compose, drawer, Navigation 3 |
 | `models` | RawSensorMVVM, RawSensorMVI | MVVM vs. MVI, StateFlow, service locator |
 | `permissions` | Permissions | runtime permissions, rationale, Accompanist |

@@ -10,7 +10,7 @@ ksp = "2.3.11"
 
 composeBom = "2026.09.00"
 # pinned alpha on purpose: Material 3 Expressive (FloatingToolbar in UiTools); stable would be 1.4.0
-material3 = "1.5.0-alpha29"
+material3 = "1.5.0-beta01"
 # material-icons-extended is no longer maintained (not in the BOM); prefer Material Symbols drawables
 materialIconsExtended = "1.7.8"
 
@@ -23,7 +23,7 @@ datastore = "1.2.1"
 room = "2.8.5"
 appcompat = "1.8.0"
 constraintlayout = "2.2.2"
-material = "1.13.0"
+material = "1.14.0"
 camerax = "1.6.2"
 media3 = "1.11.1"
 
@@ -38,8 +38,8 @@ moshi = "1.15.2"
 coil = "3.6.3"
 
 playServicesLocation = "21.4.0"
-playServicesMaps = "20.0.0"
-mapsCompose = "9.0.0"
+playServicesMaps = "20.1.0"
+mapsCompose = "9.0.1"
 
 junit = "4.13.2"
 junitVersion = "1.3.0"

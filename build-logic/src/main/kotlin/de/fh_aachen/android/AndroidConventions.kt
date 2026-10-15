@@ -7,7 +7,7 @@ import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
-import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 
 /*
  * Convention plugin 'fhac.android.conventions', applied in every module via
@@ -27,7 +27,7 @@ class AndroidConventions : Plugin<Project> {
         val compileSdk   = intProp("fhac.compileSdk", 37)
         val minSdk       = intProp("fhac.minSdk", 27)
         val targetSdk    = intProp("fhac.targetSdk", compileSdk)
-        val jvmToolchain = intProp("fhac.jvmToolchain", 21)
+        val jvmToolchain = intProp("fhac.jvmToolchain", 25)
 
         project.plugins.withId("com.android.application") {
             project.extensions.configure<ApplicationExtension> {
@@ -53,6 +53,16 @@ class AndroidConventions : Plugin<Project> {
             }
         }
 
+        // AGP 9 'built-in Kotlin': there is no kotlin-android plugin any more, AGP registers
+        // the 'kotlin' extension itself, so we hook on the Android plugins instead.
+        listOf("com.android.application", "com.android.library").forEach { id ->
+            project.plugins.withId(id) {
+                val kotlin = project.extensions.findByType(KotlinProjectExtension::class.java)
+                if (kotlin != null) kotlin.jvmToolchain(jvmToolchain)
+                else project.logger.warn("fhac: no 'kotlin' extension in ${project.path}, jvmToolchain not set")
+            }
+        }
+
         // Compose only where the Compose compiler plugin is applied (the XML starter has none).
         project.plugins.withId("org.jetbrains.kotlin.plugin.compose") {
             project.plugins.withId("com.android.application") {
@@ -63,12 +73,5 @@ class AndroidConventions : Plugin<Project> {
             }
         }
 
-        // With AGP 9 'built-in Kotlin' (android.builtInKotlin=true) this plugin id is gone,
-        // then the toolchain has to be configured differently - see gradle.properties.
-        project.plugins.withId("org.jetbrains.kotlin.android") {
-            project.extensions.configure<KotlinAndroidProjectExtension> {
-                jvmToolchain(jvmToolchain)
-            }
-        }
     }
 }
