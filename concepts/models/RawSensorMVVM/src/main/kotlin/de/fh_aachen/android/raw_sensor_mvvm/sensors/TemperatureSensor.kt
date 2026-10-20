@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 const val TAG = "SENSOR"
 
@@ -36,8 +37,10 @@ fun Int.nextJitter(withinRange: ClosedRange<Int>) = (this + (-2..2).random()).co
 
 class TemperatureRepository(private val simulationScope: CoroutineScope): SensorFlow {
     private val _sensorTemperatureRange: ClosedRange<Int> = -5..15
-    private val _data = MutableStateFlow(SensorData(rawValue = _sensorTemperatureRange.center()))
-    override val data: StateFlow<SensorData> get() = _data
+    // private val _data = MutableStateFlow(SensorData(rawValue = _sensorTemperatureRange.center()))
+    // override val data: StateFlow<SensorData> get() = _data
+    override val data: StateFlow<SensorData>
+        field = MutableStateFlow(SensorData(rawValue = _sensorTemperatureRange.center()))
 
     init {
         startUpdating()
@@ -46,9 +49,10 @@ class TemperatureRepository(private val simulationScope: CoroutineScope): Sensor
     private fun startUpdating() {
         simulationScope.launch {
             while (true) {
-                _data.value = SensorData(rawValue = _data.value.rawValue.nextJitter(withinRange = _sensorTemperatureRange))
-                Log.i(TAG,"new temperature value: ${_data.value.rawValue}")
-                delay(1000L)
+                data.value = SensorData(rawValue = data.value.rawValue.nextJitter(withinRange = _sensorTemperatureRange))
+                Log.i(TAG,"new temperature value: ${data.value.rawValue}")
+                // delay(1000L)
+                delay(1000L.milliseconds)
             }
         }
     }
@@ -61,13 +65,13 @@ class TemperatureRepository(private val simulationScope: CoroutineScope): Sensor
 class TemperatureViewModel : ViewModel() {
     private val repository = RawSensorMVVMApplication.serviceLocator.temperatureRepository
 
-    val data: StateFlow<SensorData> = repository.data
+    // val data: StateFlow<SensorData> = repository.data
 
     // We need to extract single dimensions out of the flow, that is what map is for, but
     // after map we have a simple flow and .stateIn transfers it back to a StateFlow,
     // so we are required to say where to store the value and with which initial value.
 
-    val temperature: StateFlow<Int> = data.map { it.rawValue }
+    val temperature: StateFlow<Int> = repository.data.map { it.rawValue }
         .stateIn(viewModelScope, SharingStarted.Eagerly, repository.data.value.rawValue)
 
     fun calibrate() {

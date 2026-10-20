@@ -72,6 +72,13 @@ fun HomeScreen() {
     }
 }
 
+/*
+    The term State refers to two distinct abstractions, belonging to different reactive systems.
+    - A StateFlow is a state-holding reactive stream.
+      Its primary purpose is to expose observable state through a Flow API.
+    - A Compose State is an observable value integrated into Compose's snapshot system.
+      Its primary purpose is to participate in Compose's state observation and recomposition mechanism.
+ */
 @Composable
 fun CityBox() {
     val city: TemperatureViewModel = viewModel()
