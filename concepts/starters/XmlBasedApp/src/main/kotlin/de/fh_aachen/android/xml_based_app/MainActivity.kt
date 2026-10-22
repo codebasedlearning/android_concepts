@@ -5,6 +5,7 @@ package de.fh_aachen.android.xml_based_app
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
@@ -16,6 +17,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.buttonPress).setOnClickListener {
             Toast.makeText(this@MainActivity, "First program!", Toast.LENGTH_SHORT).show()
             Log.i("Main", getString(R.string.logcat_text))   // i = info; e (error) only for errors
+
+            // see MVC – activity is View and Control
+            val text = findViewById<TextView>(R.id.buttonPressedText)
+            text.text = "Pressed!"
         }
     }
 }

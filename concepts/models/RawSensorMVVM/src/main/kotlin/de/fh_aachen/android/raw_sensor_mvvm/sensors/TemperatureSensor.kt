@@ -4,7 +4,10 @@ package de.fh_aachen.android.raw_sensor_mvvm.sensors
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import de.fh_aachen.android.raw_sensor_mvvm.RawSensorMVVMApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -62,8 +65,10 @@ class TemperatureRepository(private val simulationScope: CoroutineScope): Sensor
     }
 }
 
-class TemperatureViewModel : ViewModel() {
-    private val repository = RawSensorMVVMApplication.serviceLocator.temperatureRepository
+class TemperatureViewModel(
+    private val repository: SensorFlow
+) : ViewModel() {
+    //private val repository = RawSensorMVVMApplication.serviceLocator.temperatureRepository
 
     // val data: StateFlow<SensorData> = repository.data
 
@@ -76,5 +81,15 @@ class TemperatureViewModel : ViewModel() {
 
     fun calibrate() {
         repository.calibrate()
+    }
+
+    // this[APPLICATION_KEY] returns Application?
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val app = this[APPLICATION_KEY] as RawSensorMVVMApplication
+                TemperatureViewModel(app.temperatureRepository)
+            }
+        }
     }
 }

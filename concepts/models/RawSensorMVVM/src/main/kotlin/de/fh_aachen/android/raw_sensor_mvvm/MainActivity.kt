@@ -81,7 +81,8 @@ fun HomeScreen() {
  */
 @Composable
 fun CityBox() {
-    val city: TemperatureViewModel = viewModel()
+    //val city: TemperatureViewModel = viewModel()
+    val city = viewModel<TemperatureViewModel>(factory = TemperatureViewModel.Factory)
     val temperature by city.temperature.collectAsStateWithLifecycle()   // stops collecting while the app is in the background
 
     Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).fillMaxWidth(0.6f).height(60.dp).background(CityColor)) {
