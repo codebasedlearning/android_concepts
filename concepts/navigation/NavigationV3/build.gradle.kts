@@ -25,15 +25,10 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    //implementation(libs.material)
-    implementation(libs.androidx.compose.material.icons.extended)
-    //implementation("androidx.compose.material:material-icons-extended:1.13.0")
-    //implementation("androidx.compose.material:material:1.9.3")
-    implementation(libs.androidx.navigation.compose)
+
     implementation(project(":libs-UiTools"))
 
     debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 
     // Navigation 3
     implementation(libs.androidx.navigation3.runtime)

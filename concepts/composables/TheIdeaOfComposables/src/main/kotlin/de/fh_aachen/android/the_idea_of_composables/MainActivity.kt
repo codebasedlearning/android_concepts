@@ -20,7 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import de.fh_aachen.android.the_idea_of_composables.ui.theme.MyAppTheme
+import de.fh_aachen.android.ui_tools.ConceptTheme
 
 const val TAG = "MAIN"
 
@@ -30,7 +30,8 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()  // includes areas like the status bar
         setContent {
-            MyAppTheme {    // see Theme.kt
+            //  how to build a theme of your own: concepts/composables/Theming
+            ConceptTheme {
                 // Scaffold implements the basic material design visual layout structure
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     TextTuple(text1 = "Hello", text2 = "Course!", modifier = Modifier.padding(innerPadding))
@@ -59,36 +60,43 @@ fun TextTuple(text1: String, text2: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun ClickButton() {
-    Column {
-        Button(onClick = {
-            Log.w(TAG,"Watch out!")
-        }) {
-            //Text("Warn Me")
-            Button(onClick = {}) { Text("Inside Me") }
-        }
+    // The trailing lambda of Button is its content, a 'slot' that takes any composable:
+    //  a Text, a Row with Icon and Text, even another Button. The last one compiles, but don't:
+    //  a clickable inside a clickable fights over touches and confuses screen readers.
+    //  (Before: a Button inside the Button, inside a Column that was not needed.)
+    Button(onClick = {
+        Log.w(TAG,"Watch out!")
+    }) {
+        Text("Warn Me")
     }
 }
 
 //----- preview area
 
-@Preview
+// Previews are private (nobody calls them) and use the same theme as the app,
+//  otherwise they show the Material baseline colors and look different from the device.
+@Preview(showBackground = true)
 @Composable
-fun PreviewTextTuple() {
-    TextTuple("Hello", "Course!")   // calling composable with values
+private fun PreviewTextTuple() {
+    ConceptTheme {
+        TextTuple("Hello", "Course!")   // calling composable with values
+    }
 }
 
 @Preview
 @Composable
-fun PreviewMyButton() {
-    ClickButton()
+private fun PreviewMyButton() {
+    ConceptTheme {
+        ClickButton()
+    }
 }
 
 /*
 
 It's worth reading here:
-  - https://developer.android.com/jetpack/compose/documentation
-  - https://developer.android.com/jetpack/compose/mental-model
-  - https://developer.android.com/jetpack/compose/phases
+  - https://developer.android.com/develop/ui/compose/documentation
+  - https://developer.android.com/develop/ui/compose/mental-model
+  - https://developer.android.com/develop/ui/compose/phases
 
 Some highlights (from the doc.)
 -------------------------------
@@ -112,7 +120,7 @@ The declarative programming paradigm
     view hierarchy. Compose is a declarative UI framework.
   - One challenge with regenerating the entire screen is that it is potentially expensive,
     in terms of time, computing power, and battery usage. To mitigate this cost,
-    Compose intelligently chooses which parts of the UI need to be redrawn at any given time.
+    Compose intelligently chooses which parts of the UI need to be recomposed at any given time.
     This does have some implications for how you design your UI components.
 
 Composable functions
@@ -129,8 +137,10 @@ Recomposition
   - In an imperative UI model, to change a widget, you call a setter on the widget to change
     its internal state.
     In Compose, you call the composable function again with new data. Doing so causes the function
-    to be recomposed - the widgets emitted by the function are redrawn, if necessary, with new data.
+    to be recomposed - the function runs again and emits the UI with the new data.
     The Compose framework can intelligently recompose only the components that changed.
+    Recomposition is not drawing: composition decides WHAT to show, layout and drawing
+     follow as separate phases (see below). A changed color, for example, may only need a redraw.
 
   - Recomposition: Happens when the state value changes (e.g., MutableState is updated).
     This re-executes the body of the Composable to reflect changes, but lifecycle events like
@@ -143,6 +153,8 @@ Recomposition
 General
   - Composable functions can execute in any order.
   - Composable functions can run in parallel.
+    Read: 'write them as if they could'. Today composition runs on one thread, but
+    Compose reserves the right to change that - another reason to avoid side effects.
   - Composable functions might run quite frequently.
 
 Three phases in which Compose transforms data into UI
@@ -152,14 +164,14 @@ Three phases in which Compose transforms data into UI
 
 State and composition
   - Seen in the next units.
-    https://developer.android.com/jetpack/compose/state
+    https://developer.android.com/develop/ui/compose/state
 
 Unidirectional data flow
   - Composables work based on state and events.
-    https://developer.android.com/jetpack/compose/architecture
+    https://developer.android.com/develop/ui/compose/architecture
 
 Components
   - overview
-    https://developer.android.com/jetpack/compose/components
+    https://developer.android.com/develop/ui/compose/components
     https://www.composables.com
  */

@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Photo2</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_camera">Camera</string>
+    <string name="open_camera">➜ Camera</string>
+    <string name="open_settings">➜ Settings</string>
+    <string name="permission_missing">CameraX needs the camera permission.</string>
+    <string name="allow_camera">Allow camera</string>
+    <string name="settings">Settings</string>
+    <string name="capture">Capture</string>
+    <string name="capture_failed">Capture failed: %1$s</string>
+    <string name="photo_saved">Photo saved: %1$s</string>
 </resources>

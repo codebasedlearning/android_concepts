@@ -2,6 +2,7 @@
 
 package de.fh_aachen.android.rest
 
+import androidx.compose.ui.res.stringResource
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,6 +24,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -35,40 +39,71 @@ import de.fh_aachen.android.rest.R.drawable.background_database
 import de.fh_aachen.android.rest.model.UserActivityViewModel
 import de.fh_aachen.android.rest.model.UserModel
 import de.fh_aachen.android.rest.model.UserPostModel
-import de.fh_aachen.android.rest.ui.theme.FirstAppTheme
-import de.fh_aachen.android.ui_tools.LocalNavController
-import de.fh_aachen.android.ui_tools.NavScaffold
-import de.fh_aachen.android.ui_tools.NavScreen
-import de.fh_aachen.android.ui_tools.navScreensOf
+import de.fh_aachen.android.ui_tools.ConceptDestination
+import de.fh_aachen.android.ui_tools.ConceptScaffold
+import de.fh_aachen.android.ui_tools.ConceptTheme
+import de.fh_aachen.android.ui_tools.ScreenWithBackground
+import de.fh_aachen.android.ui_tools.navigateToTopLevel
+import androidx.navigation3.runtime.*
+import androidx.navigation3.ui.NavDisplay
+import kotlinx.serialization.Serializable
 
-enum class Screen { Home, Table }
+sealed interface Screen : NavKey {
+    @Serializable data object Home : Screen
+    @Serializable data object Table : Screen
+}
 
 class MainActivity : ComponentActivity() {
 
-    val viewModel: UserActivityViewModel by viewModels()
+    // with the factory: the ViewModel gets its repository through the constructor
+    val viewModel: UserActivityViewModel by viewModels { UserActivityViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            FirstAppTheme {
-                NavScaffold(
-                    navScreensOf(
-                        Screen.Home to NavScreen(icon_home, background_castle) { LoginScreen() },
-                        Screen.Table to NavScreen(icon_table, background_database) { UserActivityScreen(viewModel) },
-                    )
-                )
+            ConceptTheme {
+                RestApp(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun LoginScreen() {
-    val navController = LocalNavController.current
+fun RestApp(viewModel: UserActivityViewModel) {
+    val backStack = rememberNavBackStack(Screen.Home)
+    ConceptScaffold(
+        destinations = listOf(
+            ConceptDestination(Screen.Home, icon_home, stringResource(R.string.nav_home)),
+            ConceptDestination(Screen.Table, icon_table, stringResource(R.string.nav_table)),
+        ),
+        selected = backStack.lastOrNull(),
+        onSelect = { backStack.navigateToTopLevel(it) },
+    ) { padding ->
+        NavDisplay(
+            backStack = backStack,
+            onBack = { backStack.removeLastOrNull() },
+            modifier = Modifier.padding(padding),
+            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+            entryProvider = entryProvider<NavKey> {
+                entry<Screen.Home> {
+                    ScreenWithBackground(background_castle) {
+                        LoginScreen(onLogin = { backStack.navigateToTopLevel(Screen.Table) })
+                    }
+                }
+                entry<Screen.Table> {
+                    ScreenWithBackground(background_database) { UserActivityScreen(viewModel) }
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun LoginScreen(onLogin: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Button(onClick = { navController.navigate(Screen.Table.name) }) {
-            Text("Rest - Login", fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+        Button(onClick = onLogin) {
+            Text(stringResource(R.string.login), fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
     }
 }
@@ -79,16 +114,26 @@ fun UserActivityScreen(viewModel: UserActivityViewModel) {
     val posts by viewModel.posts.collectAsStateWithLifecycle()
     val selectedUserId by viewModel.selectedUserId.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+
+    val panelColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)
 
     Column(Modifier.fillMaxSize()) {
         error?.let {
-            Text(it, color = Color.White, modifier = Modifier.fillMaxWidth().background(Color(0xccaa0000)).padding(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.errorContainer).padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(it, color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.weight(1f))
+                TextButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
+            }
         }
         Row(Modifier.fillMaxSize()) {
-            Column(Modifier.weight(1f).padding(16.dp).background(Color(0x80ff0000))) {
-                Text("Users",
-                    modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth().background(Color(0x80000000)),
-                    color = Color.White, textAlign = TextAlign.Center, fontSize = 24.sp)
+            Column(Modifier.weight(1f).padding(16.dp).background(panelColor)) {
+                PanelHeader(stringResource(R.string.users))
+                if (isLoading && users.isEmpty()) {
+                    CircularProgressIndicator(modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally))
+                }
                 LazyColumn {
                     items(users) { user ->
                         UserRow(
@@ -99,12 +144,8 @@ fun UserActivityScreen(viewModel: UserActivityViewModel) {
                     }
                 }
             }
-
-            Column(Modifier.weight(2f).padding(16.dp).background(Color(0xa000ffff))) {
-                Text("Posts by User ${selectedUserId ?: "-"}",
-                    modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth().background(Color(0x80000000)),
-                    color = Color.White, textAlign = TextAlign.Center, fontSize = 24.sp
-                )
+            Column(Modifier.weight(2f).padding(16.dp).background(panelColor)) {
+                PanelHeader(stringResource(R.string.posts_by_user, selectedUserId?.toString() ?: "–"))
                 LazyColumn {
                     items(posts) { post -> PostRow(post = post) }
                 }
@@ -114,13 +155,24 @@ fun UserActivityScreen(viewModel: UserActivityViewModel) {
 }
 
 @Composable
+private fun PanelHeader(text: String) {
+    Text(
+        text,
+        modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer),
+        color = MaterialTheme.colorScheme.onPrimaryContainer, textAlign = TextAlign.Center, fontSize = 24.sp
+    )
+}
+
+@Composable
 fun UserRow(user: UserModel, isSelected: Boolean, onClick: () -> Unit) {
-    val backgroundColor = if (isSelected) Color.LightGray else Color.Transparent
+    // a role pair for the selection; unselected rows keep the panel's background and text color
+    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+    val textColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else Color.Unspecified
     Row(Modifier.fillMaxWidth().padding(8.dp).background(backgroundColor)
         .clickable(onClick = onClick)
         .padding(8.dp)
     ) {
-        Text("[${user.id}] ${user.name}", fontSize = 20.sp, color = Color.White)
+        Text("[${user.id}] ${user.name}", fontSize = 20.sp, color = textColor)
     }
 }
 
@@ -128,6 +180,6 @@ fun UserRow(user: UserModel, isSelected: Boolean, onClick: () -> Unit) {
 fun PostRow(post: UserPostModel) {
     Column(Modifier.padding(8.dp)) {
         Text("[${post.id}] ${post.title}",
-            fontSize = 16.sp, color = Color.Black)  // , style = MaterialTheme.typography.subtitle1
+            fontSize = 16.sp)
     }
 }

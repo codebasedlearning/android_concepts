@@ -24,13 +24,11 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.runtime.compose)
-    //implementation(libs.androidx.material.icons.extended)
-    implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     implementation(project(":libs-UiTools"))
+    implementation(project(":models-RawSensorLib"))
 
     debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }

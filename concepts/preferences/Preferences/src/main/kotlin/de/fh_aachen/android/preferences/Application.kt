@@ -29,27 +29,13 @@ import de.fh_aachen.android.preferences.model.UserPreferencesRepository
 // "datastore/" subdirectory in the application context's files directory.
 val Context.userPrefsDataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
-// use DI if you like
-
-data class ServiceLocator(
-    val preferencesRepository: UserPreferencesRepository
-)
-
+/*
+ * The 'composition root', as in the models apps and Room. Before: a static ServiceLocator
+ *  with 'lateinit var instance' that the ViewModel reached out to (a hidden dependency).
+ *  Now the ViewModel gets the repository through its constructor, see SettingsViewModel.Factory.
+ *  'by lazy': the DataStore needs a Context, which does not exist yet while the Application's
+ *  properties are initialised.
+ */
 class PreferencesApplication : Application() {
-    companion object {
-        private lateinit var instance: PreferencesApplication
-
-        val serviceLocator by lazy {
-            ServiceLocator(
-                instance.preferencesRepository
-            )
-        }
-    }
-
-    private val preferencesRepository by lazy { UserPreferencesRepository(userPrefsDataStore) }
-
-    override fun onCreate() {
-        super.onCreate()
-        instance = this
-    }
+    val preferencesRepository by lazy { UserPreferencesRepository(userPrefsDataStore) }
 }

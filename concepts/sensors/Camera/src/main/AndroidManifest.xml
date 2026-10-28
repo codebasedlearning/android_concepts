@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- only needed because we demonstrate the permission screen; the camera INTENT itself
+         needs none - but once declared, it must be granted (see CameraScreen) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- no storage permission needed: getExternalFilesDir() is app-specific storage (API 19+) -->
     <uses-feature

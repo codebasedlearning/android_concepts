@@ -58,6 +58,10 @@ interface CategoryDao {
     @Query("SELECT * FROM category")
     fun getAllCategories(): Flow<List<CategoryEntity>>
 
+    // for seeding an empty database (a new query does not change the schema)
+    @Query("SELECT COUNT(*) FROM category")
+    suspend fun count(): Int
+
     // if you want to have a filter on a given id:
     //      @Query("SELECT * FROM category WHERE id = :id")
     //      fun getCategoryById(id: UUID): Flow<IntCategoryEntity?>
@@ -118,29 +122,32 @@ abstract class ShopDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun productDao(): ProductDao
 
-    // feel free to use a DI framework
+    /*
+     * Before, there were two singletons at once:
+     * this companion (with double-checked locking) and the lazy property in RoomApplication.
+     * One owner is enough, and the Application is it: it exists exactly once per process.
+     * Double-checked locking is what you need when there is no such owner, e.g. in a library:
+     *      @Volatile private var instance: ShopDatabase? = null
+     *      fun get(context: Context) = instance ?: synchronized(this) {
+     *          instance ?: create(context).also { instance = it }   // second check matters:
+     *      }                                                        // another thread may have won
+     */
     companion object {
         const val SchemaName = "product_category_db"
 
-        @Volatile
-        private var instance: ShopDatabase? = null
-
-        // Double-checked locking: the second check inside synchronized matters, another
-        // thread may have created the instance while we were waiting for the lock.
-        fun getDatabase(context: Context): ShopDatabase {
-            return instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    ShopDatabase::class.java,
-                    SchemaName
-                )
-                    //.fallbackToDestructiveMigration()
-                    .fallbackToDestructiveMigration(false)
-                    .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
-                    //.addMigrations(MIGRATION_1_2)
-                    .build()
-                    .also { instance = it }
-            }
-        }
+        fun create(context: Context): ShopDatabase =
+            Room.databaseBuilder(
+                context.applicationContext,
+                ShopDatabase::class.java,
+                SchemaName
+            )
+                // Careful, this reads like 'off' but means 'on': destructive migration is
+                //  enabled (no migration path -> tables are dropped, data is gone). The parameter
+                //  only decides whether all tables are dropped, including those Room does not know.
+                //  The deprecated no-argument version is the same as 'true'.
+                .fallbackToDestructiveMigration(dropAllTables = false)
+                .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
+                //.addMigrations(MIGRATION_1_2)
+                .build()
     }
 }

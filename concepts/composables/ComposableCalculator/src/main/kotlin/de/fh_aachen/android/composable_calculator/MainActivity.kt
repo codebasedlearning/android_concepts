@@ -32,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import de.fh_aachen.android.composable_calculator.ui.theme.FirstAppTheme
+import de.fh_aachen.android.ui_tools.ConceptTheme
 
 /*
  * A simple calculator built from basic composables: Column, Row, Button, Text and a (read-only)
@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            FirstAppTheme {
+            ConceptTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     CalculatorApp(modifier = Modifier.padding(innerPadding))
                 }
@@ -197,7 +197,7 @@ private fun CalculatorKey(key: Key, onClick: () -> Unit, modifier: Modifier = Mo
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun CalculatorPreview() {
-    FirstAppTheme {
+    ConceptTheme {
         CalculatorScreen(
             state = CalculatorState(
                 display = "42", accumulator = 40.0, pendingOperator = Operator.Add, overwrite = false,

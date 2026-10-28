@@ -17,18 +17,17 @@ import de.fh_aachen.android.room.model.ShopRepository
  *  – Exposed, JPA, etc., but that’s off-device.
  */
 
+/*
+ * The 'composition root', as in the models apps: the one place that creates the
+ *  long-lived objects. Before, the ViewModel reached out to a static 'RoomApplication.instance'
+ *  (a hidden dependency, untestable without a running app). Now it gets the repository through
+ *  its constructor, see ShopViewModel.Factory. Feel free to use a DI framework.
+ *
+ *  'by lazy' here for a reason: the database needs a Context, and property initializers run
+ *  in the constructor - before the Application is attached to its Context. Lazily, it is
+ *  created on first use, long after that.
+ */
 class RoomApplication : Application() {
-
-    // feel free to use a DI framework
-    companion object {
-        lateinit var instance: RoomApplication
-    }
-
-    private val localDatabase: ShopDatabase by lazy { ShopDatabase.getDatabase(this) }
+    private val localDatabase: ShopDatabase by lazy { ShopDatabase.create(this) }
     val dataRepository: ShopRepository by lazy { ShopRepository(localDatabase) }
-
-    override fun onCreate() {
-        super.onCreate()
-        instance = this
-    }
 }

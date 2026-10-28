@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Activity Lifecycle</string>
+    <string name="instructions">Enter names, rotate the device and watch the inputs and Logcat (tag MAIN).</string>
+    <string name="enter_name">Enter name</string>
+</resources>

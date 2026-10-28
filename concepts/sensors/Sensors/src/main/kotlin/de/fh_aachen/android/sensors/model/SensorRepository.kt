@@ -57,12 +57,23 @@ class SensorRepository(val context: WeakReference<Context>) {
     private val accelerometer: Sensor? = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private val gyroscope: Sensor? = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
-    fun startAccelerometerUpdates(): Flow<FloatArray> = callbackFlow {
+    // Is the sensor there at all? An emulator, for example, often has no gyroscope;
+    //  before, the screen then just showed zeros, as if the device lay perfectly still.
+    val hasAccelerometer: Boolean get() = accelerometer != null
+    val hasGyroscope: Boolean get() = gyroscope != null
+
+    fun startAccelerometerUpdates(): Flow<FloatArray> = sensorFlow(accelerometer)
+
+    fun startGyroscopeUpdates(): Flow<FloatArray> = sensorFlow(gyroscope)
+
+    // One function for any SensorManager sensor - before, accelerometer and gyroscope
+    //  were two identical copies of this callbackFlow.
+    private fun sensorFlow(sensor: Sensor?): Flow<FloatArray> = callbackFlow {
         var prevData = floatArrayOf(0f, 0f, 0f)
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent?) {
                 event?.let {
-                    if (/*it.sensor==accelerometer && */ !prevData.contentEquals(it.values)) {
+                    if (!prevData.contentEquals(it.values)) {
                         // The framework reuses the event and its 'values' array, so send a copy;
                         // the collector may run later, when 'values' already holds newer data.
                         prevData = it.values.copyOf()
@@ -70,42 +81,14 @@ class SensorRepository(val context: WeakReference<Context>) {
                     }
                 }
             }
-
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
         }
 
-        // register the listener
-        accelerometer?.let {
+        // register the listener (no sensor: nothing to register, the flow simply stays silent)
+        sensor?.let {
             sensorManager?.registerListener(listener, it, SensorManager.SENSOR_DELAY_NORMAL)
         }
-
         // ensure the listener is unregistered when the flow is closed
-        awaitClose {
-            sensorManager?.unregisterListener(listener)
-        }
-    }
-
-    fun startGyroscopeUpdates(): Flow<FloatArray> = callbackFlow {
-        var prevData = floatArrayOf(0f, 0f, 0f)
-        val listener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent?) {
-                event?.let {
-                    if (/*it.sensor==gyroscope && */ !prevData.contentEquals(it.values)) {
-                        // The framework reuses the event and its 'values' array, so send a copy;
-                        // the collector may run later, when 'values' already holds newer data.
-                        prevData = it.values.copyOf()
-                        trySend(prevData.copyOf())
-                    }
-                }
-            }
-
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-        }
-
-        gyroscope?.let {
-            sensorManager?.registerListener(listener, it, SensorManager.SENSOR_DELAY_NORMAL)
-        }
-
         awaitClose {
             sensorManager?.unregisterListener(listener)
         }

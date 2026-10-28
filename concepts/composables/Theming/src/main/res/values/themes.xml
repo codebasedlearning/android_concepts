@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The WINDOW theme (XML, android:theme in the manifest), not the Compose theme.
+        It is only visible before Compose draws the first frame (window background, system bars).
+        Everything after that comes from AppTheme in Kotlin. Keep it minimal: no AppCompat,
+        no Material Components, just a platform theme without action bar - plus a night variant
+        in values-night, so dark mode does not start with a white flash.
+    -->
+    <style name="Theme.MyApp" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

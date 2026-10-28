@@ -33,7 +33,7 @@ fun RoundedRectangle(
 }
 
 @Composable
-fun HeadlineText(text: String, color: Color = MaterialTheme.colorScheme.primary) {
+private fun HeadlineText(text: String, color: Color = MaterialTheme.colorScheme.primary) {
     Text(
         text = text,
         style = MaterialTheme.typography.headlineMedium,

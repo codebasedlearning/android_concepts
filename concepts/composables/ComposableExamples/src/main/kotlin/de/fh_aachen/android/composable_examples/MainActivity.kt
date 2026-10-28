@@ -7,10 +7,12 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,19 +24,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import de.fh_aachen.android.composable_examples.ui.theme.MyAppTheme
+import de.fh_aachen.android.ui_tools.ConceptTheme
 
 /*
 The MainActivity of this application demonstrates various ways to arrange and display
@@ -42,7 +47,7 @@ UI elements using Jetpack Compose. It showcases different layout components like
 Box, and LazyRow, along with modifiers for styling and interaction.
 
 Refs.:
-  - https://developer.android.com/jetpack/compose/components
+  - https://developer.android.com/develop/ui/compose/components
  */
 
 const val TAG = "MAIN"
@@ -50,10 +55,9 @@ const val TAG = "MAIN"
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
         setContent {
-            MyAppTheme {
+            ConceptTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(modifier = Modifier.padding(innerPadding))
                 }
@@ -64,7 +68,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
-    Column(modifier) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         // all in one...
         Row {
             Text("This")
@@ -76,6 +83,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
         RowWithModifiers()
         RowAndBoxWithAlignments()
         CrowdedRow()
+        HorizontallyScrolledRow()
         ScrollableRow()
         RowWithImage()
     }
@@ -90,22 +98,38 @@ fun SimpleRow() {
     }
 }
 
+/*
+ * Modifier order matters. Modifiers wrap each other from left to right (outside in):
+ *  - padding, then background: the padding is outside the colored area (like a margin),
+ *  - background, then padding: the padding is inside the colored area.
+ * There is no 'margin' in Compose - it is just padding before background.
+ */
 @Composable
 fun RowWithModifiers() {
-    Row(modifier = Modifier
-        .padding(all = 14.dp)
-        .background(Color.Gray)
-    ) {
-        Text("This")
-        Text("is", modifier = Modifier.padding(all = 4.dp))
-        Text("Text")
+    Column {
+        Row(modifier = Modifier
+            .padding(all = 14.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Text("padding")
+            Text("then", modifier = Modifier.padding(all = 4.dp))
+            Text("background")
+        }
+        Row(modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(all = 14.dp)
+        ) {
+            Text("background")
+            Text("then", modifier = Modifier.padding(all = 4.dp))
+            Text("padding")
+        }
     }
 }
 
 @Composable
 fun RowAndBoxWithAlignments() {
     Row(modifier = Modifier
-        .background(Color.Cyan)
+        .background(MaterialTheme.colorScheme.secondaryContainer)
         .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -117,7 +141,7 @@ fun RowAndBoxWithAlignments() {
         }
         Box(modifier = Modifier
             .weight(3f)
-            .background(Color.Magenta),
+            .background(MaterialTheme.colorScheme.tertiaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Text("is")
@@ -130,11 +154,27 @@ fun RowAndBoxWithAlignments() {
     }
 }
 
+// Too much content for a Row: the rest is simply cut off.
 @Composable
 fun CrowdedRow() {
     Row(modifier = Modifier
-        .background(Color.Gray)
+        .background(MaterialTheme.colorScheme.surfaceVariant)
         .clickable { Log.v(TAG, "clicked1") }
+    ) {
+        for (i in 1..15)
+            Text("Text-$i ")
+    }
+}
+
+/*
+ * All 15 Texts are composed at once - fine for a few elements, but for long lists the LazyRow
+ * below composes only what is visible.
+ */
+@Composable
+fun HorizontallyScrolledRow() {
+    Row(modifier = Modifier
+        .background(MaterialTheme.colorScheme.surfaceVariant)
+        .horizontalScroll(rememberScrollState())
     ) {
         for (i in 1..15)
             Text("Text-$i ")
@@ -150,32 +190,77 @@ fun ScrollableRow() {
     }
 }
 
+/*
+ * Two ways to make an image clickable:
+ *  - Modifier.clickable: the order matters again - clip first, so the ripple is round, too,
+ *  - Surface(onClick = ...): shape, ripple and accessibility semantics (role, enabled) in one.
+ * Before, the second image was wrapped in an IconButton - made for 24 dp icons, not for photos.
+ * And: a clickable element needs a contentDescription, otherwise TalkBack announces nothing
+ * useful. Only purely decorative images get null.
+ */
 @Composable
 fun RowWithImage() {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Image(
             painter = painterResource(R.drawable.beach),
-            contentDescription = null,
+            contentDescription = "Beach photo",
             modifier = Modifier
                 .size(75.dp)
                 .clip(CircleShape)
                 .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-            .clickable { Log.v(TAG, "Image clicked") }
+                .clickable { Log.v(TAG, "Image clicked") }
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text("Beach")
         Spacer(modifier = Modifier.width(8.dp))
-        IconButton(
-            modifier = Modifier.size(width = 75.dp, height = 75.dp).clip(CircleShape),
-            onClick = { Log.v(TAG, "Icon clicked") }
+        Surface(
+            onClick = { Log.v(TAG, "Surface clicked") },
+            shape = CircleShape,
+            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+            modifier = Modifier.size(75.dp)
         ) {
             Image(
                 painter = painterResource(R.drawable.beach),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                contentDescription = "Beach photo, as a button",
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
+}
+
+//----- preview area
+
+/*
+ * Previews of the building blocks - the quickest way to try layout changes.
+ * A Surface gives them the theme's background and content color (light and dark).
+ */
+@Composable
+private fun PreviewFrame(content: @Composable () -> Unit) {
+    ConceptTheme {
+        Surface { content() }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun MainScreenPreview() {
+    PreviewFrame { MainScreen() }
+}
+
+@Preview
+@Composable
+private fun RowWithModifiersPreview() {
+    PreviewFrame { RowWithModifiers() }
+}
+
+@Preview
+@Composable
+private fun RowAndBoxWithAlignmentsPreview() {
+    PreviewFrame { RowAndBoxWithAlignments() }
+}
+
+@Preview
+@Composable
+private fun RowWithImagePreview() {
+    PreviewFrame { RowWithImage() }
 }

@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Sensors</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_sensor_values">Sensor values</string>
+    <string name="nav_sensor_list">Sensor list</string>
+    <string name="login">Sensors – Login</string>
+    <string name="not_available">not available</string>
+    <string name="accelerometer">Accelerometer</string>
+    <string name="gyroscope">Gyroscope</string>
+    <string name="battery">Battery</string>
 </resources>

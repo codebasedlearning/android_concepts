@@ -1,3 +1,26 @@
 <resources>
     <string name="app_name">Modal Dialog</string>
+    <string name="nav_home">Home</string>
+    <string name="dialogs">Dialogs</string>
+    <string name="pickers">Pickers</string>
+    <string name="open_dialogs">➜ Dialog</string>
+    <string name="open_pickers">➜ Picker</string>
+    <string name="date_picker">Date Picker</string>
+    <string name="time_picker">Time Picker</string>
+    <string name="color_picker">Color Picker</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="select_time">Select time</string>
+    <string name="choose_color">Choose color</string>
+    <string name="saved">Saved</string>
+    <string name="coffee_dialog">Coffee Dialog</string>
+    <string name="save_confirmation">Save Confirmation</string>
+    <string name="info">Info</string>
+    <string name="quick_question">Quick question</string>
+    <string name="grab_a_coffee">Grab a coffee?</string>
+    <string name="nope">Nope</string>
+    <string name="do_it">Do it</string>
+    <string name="save_item_title">Save item?</string>
+    <string name="save_item_text">The item will be stored on this device.</string>
+    <string name="save">Save</string>
 </resources>

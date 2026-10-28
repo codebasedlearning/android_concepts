@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.fhac.android.conventions)
+    alias(libs.plugins.kotlin.serialization)     // for the @Serializable navigation keys
 }
 
 android {
@@ -23,19 +24,12 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.runtime.compose)
-    //implementation(libs.material)
-    //implementation("androidx.compose.material:material-icons-extended:1.13.0")
-    //implementation("androidx.compose.material:material:1.9.3")
-    implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.kotlinx.serialization.json)     // rememberNavBackStack saves the keys
     implementation(project(":libs-UiTools"))
-    //implementation("androidx.compose.material3:material3-icons-extended:1.13.0")
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 
     // CameraX
     implementation(libs.androidx.camera.core)

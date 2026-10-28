@@ -4,6 +4,8 @@ package de.fh_aachen.android.rest.model
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import de.fh_aachen.android.rest.service_locator.ServiceLocator
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -67,8 +70,15 @@ class UserActivityRepository(private val userActivityApi: UserActivityApi) {
     //    }
 }
 
-class UserActivityViewModel() : ViewModel() {
-    private val repository: UserActivityRepository = ServiceLocator.userActivityRepository
+/*
+ *  The repository comes in through the constructor; the Factory below asks the
+ *  ServiceLocator for it. That distinction is the point: an object that builds the long-lived
+ *  things (Retrofit, Moshi, the repository) is a fine container - but the ViewModel should not
+ *  look things up by itself, it should be given what it needs (testable with a fake repository).
+ */
+class UserActivityViewModel(
+    private val repository: UserActivityRepository
+) : ViewModel() {
 
     private val _users = MutableStateFlow<List<UserModel>>(emptyList())
     val users: StateFlow<List<UserModel>> = _users.asStateFlow()
@@ -77,6 +87,13 @@ class UserActivityViewModel() : ViewModel() {
     // viewModelScope crashes the app, so we turn it into UI state.
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    // new: the UI shows a spinner while the users are loading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // new: incremented by retry(), so the posts are fetched again for the same user
+    private val reload = MutableStateFlow(0)
 
     private suspend fun <T> loadOrNull(what: String, block: suspend () -> T): T? = try {
         block().also { _error.value = null }
@@ -101,16 +118,36 @@ class UserActivityViewModel() : ViewModel() {
     // we could refresh the posts when the user is selected
     // mapLatest: a new selection cancels a still running request for the previous one
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val _posts: StateFlow<List<UserPostModel>> = _selectedUserId.mapLatest { userId ->
+    private val _posts: StateFlow<List<UserPostModel>> = combine(_selectedUserId, reload) { userId, _ -> userId }.mapLatest { userId ->
         if (userId == null) emptyList()
         else loadOrNull("posts") { repository.fetchUserPosts(userId) } ?: emptyList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val posts: StateFlow<List<UserPostModel>> = _posts
 
     init {
+        loadUsers()
+    }
+
+    /*
+     * Before, the users were loaded once, in init: an app started offline kept its error
+     *  forever. Now 'Retry' calls this again (and re-fetches the posts of the selected user).
+     *  A failed load keeps the old list instead of clearing it.
+     */
+    private fun loadUsers() {
+        if (_isLoading.value) return                // a load is already running
         viewModelScope.launch {
-            _users.value = loadOrNull("users") { repository.fetchUsers() } ?: emptyList()
+            _isLoading.value = true
+            try {
+                loadOrNull("users") { repository.fetchUsers() }?.let { _users.value = it }
+            } finally {
+                _isLoading.value = false
+            }
         }
+    }
+
+    fun retry() {
+        loadUsers()
+        reload.value++
     }
 
     fun selectUser(userId: Int) {
@@ -119,6 +156,14 @@ class UserActivityViewModel() : ViewModel() {
         //      viewModelScope.launch {
         //          _posts.value = repository.fetchUserPosts(userId)
         //      }
+    }
+
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                UserActivityViewModel(ServiceLocator.userActivityRepository)
+            }
+        }
     }
 }
 

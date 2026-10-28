@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Location</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_permission">Permission</string>
+    <string name="nav_location">Location</string>
+    <string name="login">Location – Login</string>
+    <string name="permission_title">Permission Location</string>
+    <string name="request">Request</string>
+    <string name="settings">Settings</string>
+    <string name="continue_to_map">Continue to the map</string>
+    <string name="permission_missing">The map needs the location permission.</string>
+    <string name="grant_permission">Grant permission</string>
+    <string name="current_location">Current location</string>
 </resources>

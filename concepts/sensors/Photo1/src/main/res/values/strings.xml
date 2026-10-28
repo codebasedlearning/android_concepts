@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Photo1</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_camera">Camera</string>
+    <string name="open_camera">➜ Camera</string>
+    <string name="open_settings">➜ Settings</string>
+    <string name="capture_to_file">Capture to file</string>
+    <string name="capture_to_photos">Capture to Photos</string>
+    <string name="needs_android_10">\'Capture to Photos\' needs Android 10 or newer.</string>
+    <string name="last_photo_uri">Last photo URI:</string>
+    <string name="captured_photo">Captured photo</string>
+    <string name="no_photo_yet">No photo captured yet.</string>
 </resources>

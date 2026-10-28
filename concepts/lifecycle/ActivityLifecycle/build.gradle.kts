@@ -1,0 +1,32 @@
+// (C) A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.fhac.android.conventions)
+}
+
+android {
+    namespace = "de.fh_aachen.android.activity_lifecycle"
+
+    defaultConfig {
+        applicationId = "de.fh_aachen.android.activity_lifecycle"
+        versionCode = 1
+        versionName = "1.0"
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)       // viewModel(), SavedStateHandle
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    implementation(project(":libs-UiTools"))
+
+    debugImplementation(libs.androidx.ui.tooling)
+}

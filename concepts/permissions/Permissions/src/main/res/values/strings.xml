@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">Permissions</string>
+    <string name="nav_home">Home</string>
+    <string name="android_dialog">Android permission dialog</string>
+    <string name="accompanist_dialog">Accompanist permission dialog</string>
+    <string name="nav_camera">Camera</string>
+    <string name="settings">Settings</string>
+    <string name="granted">Camera permission granted ✅</string>
+    <string name="continue_">Continue</string>
+    <string name="requestable">We need camera permission to continue.</string>
+    <string name="allow_camera">Allow camera</string>
+    <string name="rationale">You denied camera before.\nWe use it to take photos.</string>
+    <string name="try_again">Try again</string>
+    <string name="blocked">Camera permission seems blocked.\nPlease enable it in system settings.</string>
+    <string name="open_settings">Open settings</string>
 </resources>

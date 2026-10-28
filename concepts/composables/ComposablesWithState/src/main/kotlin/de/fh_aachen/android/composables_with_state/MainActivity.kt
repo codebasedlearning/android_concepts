@@ -26,8 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import de.fh_aachen.android.composables_with_state.ui.theme.FirstAppTheme
+import de.fh_aachen.android.ui_tools.ConceptTheme
 
 const val TAG = "MAIN"
 
@@ -55,12 +56,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge() // includes areas like the status bar
         setContent {
-            FirstAppTheme {
+            ConceptTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(modifier = Modifier.padding(innerPadding)) {
                         RowWithEditorAndButtonA()
                         RowWithEditorAndButtonB()
                         RowWithEditorAndButtonC()
+                        RowWithEditorAndButtonD()
                     }
                 }
             }
@@ -127,14 +129,14 @@ fun InputText(input: String, log: String) {
 @Composable
 fun RowWithEditorAndButtonB() {
     Row {
-        // input is now of type MutableState, needed for InputEdit
+        // input is now of type MutableState, needed for InputEditWithState
         val input = remember { mutableStateOf("") }
         Text(
             "Data B:",
             modifier = Modifier.alignByBaseline()
         )
         Spacer(Modifier.width(8.dp))
-        InputEdit(input, Modifier.alignByBaseline())
+        InputEditWithState(input, Modifier.alignByBaseline())
         Button(onClick = { Log.v(TAG, "Data B clicked") }) { Text(text = input.value) }
         InputText(input = "+++", log = "B")
         InputText(input = input.value, log = "B")
@@ -150,7 +152,7 @@ fun RowWithEditorAndButtonB() {
  * This keeps InputEdit stateless, reusable and easy to preview and test.
  */
 @Composable
-fun InputEdit(input: MutableState<String>, modifier: Modifier = Modifier) {
+fun InputEditWithState(input: MutableState<String>, modifier: Modifier = Modifier) {
     TextField(
         value = input.value,
         onValueChange = { newText -> input.value = newText },
@@ -159,10 +161,17 @@ fun InputEdit(input: MutableState<String>, modifier: Modifier = Modifier) {
     )
 }
 
+/*
+ * C and D differ in one thing, so you can see what each step does:
+ *  - C: state hoisting - the row owns the state, InputEdit gets value + callback (still 'remember'),
+ *  - D: the same with 'rememberSaveable'.
+ * Type into both and rotate the device: C is empty again, D keeps its text.
+ * (Before, C introduced hoisting and rememberSaveable at the same time.)
+ */
 @Composable
 fun RowWithEditorAndButtonC() {
     Row {
-        var input by rememberSaveable { mutableStateOf("") }
+        var input by remember { mutableStateOf("") }
         Text(
             "Data C:",
             modifier = Modifier.alignByBaseline()
@@ -177,6 +186,23 @@ fun RowWithEditorAndButtonC() {
 }
 
 @Composable
+fun RowWithEditorAndButtonD() {
+    Row {
+        var input by rememberSaveable { mutableStateOf("") }     // the only change to C
+        Text(
+            "Data D:",
+            modifier = Modifier.alignByBaseline()
+        )
+        Spacer(Modifier.width(8.dp))
+        InputEdit(input, { newText -> input = newText }, Modifier.alignByBaseline())
+        Button(onClick = { Log.v(TAG, "Data D clicked") }) { Text(text = input) }
+        InputText(input = "+++", log = "D")
+        InputText(input = input, log = "D")
+    }
+    SideEffect { Log.d(TAG, "Row D Recomposition") }
+}
+
+@Composable
 fun InputEdit(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
     TextField(
         value = value,
@@ -184,4 +210,16 @@ fun InputEdit(value: String, onValueChange: (String) -> Unit, modifier: Modifier
         label = { Text("Enter text") },
         modifier = modifier.width(150.dp)
     )
+}
+
+//----- preview area
+
+// The hoisted InputEdit is stateless, so a preview just passes a value.
+//  InputEditWithState would need a MutableState even in the preview.
+@Preview
+@Composable
+private fun InputEditPreview() {
+    ConceptTheme {
+        InputEdit(value = "Hello", onValueChange = {})
+    }
 }

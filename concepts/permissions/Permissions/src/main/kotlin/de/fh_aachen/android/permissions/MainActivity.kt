@@ -2,6 +2,7 @@
 
 package de.fh_aachen.android.permissions
 
+import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -33,20 +33,20 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
-import de.fh_aachen.android.permissions.ui.theme.FirstAppTheme
 import de.fh_aachen.android.permissions.R.drawable.icon_home
 import de.fh_aachen.android.permissions.R.drawable.background_castle
 import de.fh_aachen.android.permissions.R.drawable.background_permission
-import de.fh_aachen.android.ui_tools.HeadlineText
-import de.fh_aachen.android.ui_tools.LocalNavController
-import de.fh_aachen.android.ui_tools.NavScaffold
-import de.fh_aachen.android.ui_tools.NavScreen
-import de.fh_aachen.android.ui_tools.PermissionUiState
+import de.fh_aachen.android.ui_tools.ConceptDestination
+import de.fh_aachen.android.ui_tools.ConceptScaffold
+import de.fh_aachen.android.ui_tools.ConceptTheme
 import de.fh_aachen.android.ui_tools.RoundedRectangle
-import de.fh_aachen.android.ui_tools.computePermissionUiState
 import de.fh_aachen.android.ui_tools.gotoSettingsActivity
+import de.fh_aachen.android.ui_tools.ScreenWithBackground
 import de.fh_aachen.android.ui_tools.isPermissionGranted
-import de.fh_aachen.android.ui_tools.navScreensOf
+import de.fh_aachen.android.ui_tools.navigateToTopLevel
+import androidx.navigation3.runtime.*
+import androidx.navigation3.ui.NavDisplay
+import kotlinx.serialization.Serializable
 
 /*
  * You can also use 'adb' to manipulate the permissions:
@@ -71,7 +71,12 @@ import de.fh_aachen.android.ui_tools.navScreensOf
  *  - adb
  */
 
-enum class Screen { Home, PermissionAndroid, PermissionAccompanist, Camera }
+sealed interface Screen : NavKey {
+    @Serializable data object Home : Screen
+    @Serializable data object PermissionAndroid : Screen
+    @Serializable data object PermissionAccompanist : Screen
+    @Serializable data object Camera : Screen
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -79,36 +84,70 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            FirstAppTheme {
-                NavScaffold(
-                    navScreensOf(
-                        Screen.Home to NavScreen(icon_home, background_castle) { LoginScreen() },
-                        Screen.PermissionAndroid to NavScreen(R.drawable.outline_counter_1_24, background_permission) { PermissionScreenAndroid() },
-                        Screen.PermissionAccompanist to NavScreen(R.drawable.outline_counter_2_24, background_permission) { PermissionScreenAccompanist() },
-                        Screen.Camera to NavScreen(R.drawable.icon_camera, background_castle) { CameraScreen() },
-                    )
-                )
+            ConceptTheme {
+                PermissionsApp()
             }
         }
     }
 }
 
 @Composable
-fun LoginScreen() {
+fun PermissionsApp() {
+    val backStack = rememberNavBackStack(Screen.Home)
+    val openCamera = { backStack.navigateToTopLevel(Screen.Camera) }
+    ConceptScaffold(
+        destinations = listOf(
+            ConceptDestination(Screen.Home, icon_home, stringResource(R.string.nav_home)),
+            ConceptDestination(Screen.PermissionAndroid, R.drawable.outline_counter_1_24, stringResource(R.string.android_dialog)),
+            ConceptDestination(Screen.PermissionAccompanist, R.drawable.outline_counter_2_24, stringResource(R.string.accompanist_dialog)),
+            ConceptDestination(Screen.Camera, R.drawable.icon_camera, stringResource(R.string.nav_camera)),
+        ),
+        selected = backStack.lastOrNull(),
+        onSelect = { backStack.navigateToTopLevel(it) },
+    ) { padding ->
+        NavDisplay(
+            backStack = backStack,
+            onBack = { backStack.removeLastOrNull() },
+            modifier = Modifier.padding(padding),
+            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+            entryProvider = entryProvider<NavKey> {
+                entry<Screen.Home> {
+                    ScreenWithBackground(background_castle) {
+                        LoginScreen(
+                            onOpenAndroidDialog = { backStack.navigateToTopLevel(Screen.PermissionAndroid) },
+                            onOpenAccompanistDialog = { backStack.navigateToTopLevel(Screen.PermissionAccompanist) },
+                        )
+                    }
+                }
+                entry<Screen.PermissionAndroid> {
+                    ScreenWithBackground(background_permission) { PermissionScreenAndroid(onPermissionGranted = openCamera) }
+                }
+                entry<Screen.PermissionAccompanist> {
+                    ScreenWithBackground(background_permission) { PermissionScreenAccompanist(onPermissionGranted = openCamera) }
+                }
+                entry<Screen.Camera> {
+                    ScreenWithBackground(background_castle) { CameraScreen() }
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun LoginScreen(onOpenAndroidDialog: () -> Unit, onOpenAccompanistDialog: () -> Unit) {
     val context = LocalContext.current
-    val navController = LocalNavController.current
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { navController.navigate(Screen.PermissionAndroid.name) }) {
-                Text("Android Permission Dialog", style = MaterialTheme.typography.headlineMedium)
+            Button(onClick = onOpenAndroidDialog) {
+                Text(stringResource(R.string.android_dialog), style = MaterialTheme.typography.headlineMedium)
             }
             Spacer(Modifier.height(8.dp))
-            Button(onClick = { navController.navigate(Screen.PermissionAccompanist.name) }) {
-                Text("Accompanist Permission Dialog", style = MaterialTheme.typography.headlineMedium)
+            Button(onClick = onOpenAccompanistDialog) {
+                Text(stringResource(R.string.accompanist_dialog), style = MaterialTheme.typography.headlineMedium)
             }
             Spacer(Modifier.height(8.dp))
             Button(onClick = { gotoSettingsActivity(context) }) {
-                Text("Settings", style = MaterialTheme.typography.headlineMedium)
+                Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineMedium)
             }
         }
     }
@@ -129,9 +168,9 @@ fun CameraScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         RoundedRectangle {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                HeadlineText("Cam Mockup (Perm. $camGranted)")
+                Text("Cam Mockup (Perm. $camGranted)", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
                 Button(onClick = { gotoSettingsActivity(context) }) {
-                    Text("Settings")
+                    Text(stringResource(R.string.settings))
                 }
             }
         }
@@ -140,14 +179,13 @@ fun CameraScreen() {
 
 @Composable
 fun GrantedBlock(
-    // onPermissionGranted: () -> Unit,
+    onPermissionGranted: () -> Unit,       // activated, instead of LocalNavController
 ) {
-    val navController = LocalNavController.current
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Camera permission granted ✅")
+        Text(stringResource(R.string.granted))
         Spacer(Modifier.height(8.dp))
-        Button(onClick = { navController.navigate(Screen.Camera.name) } /* or onPermissionGranted */) {
-            Text("Continue")
+        Button(onClick = onPermissionGranted) {
+            Text(stringResource(R.string.continue_))
         }
     }
 }
@@ -157,10 +195,10 @@ fun NotGrantedRequestableBlock(
     action: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("We need camera permission to continue.")
+        Text(stringResource(R.string.requestable))
         Spacer(Modifier.height(8.dp))
         Button(onClick = action) {
-            Text("Allow camera")
+            Text(stringResource(R.string.allow_camera))
         }
     }
 }
@@ -170,10 +208,10 @@ fun NotGrantedShowRationaleBlock(
     action: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("You denied camera before.\nWe use it to take photos.")
+        Text(stringResource(R.string.rationale))
         Spacer(Modifier.height(8.dp))
         Button(onClick = action) {
-            Text("Try again")
+            Text(stringResource(R.string.try_again))
         }
     }
 }
@@ -183,18 +221,18 @@ fun NotGrantedMaybePermanentlyDeniedBlock(
     action: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Camera permission seems blocked.\n Please enable it in system settings.")
+        Text(stringResource(R.string.blocked))
         Spacer(Modifier.height(8.dp))
         Button(onClick = action ) {
-            Text("Open settings")
+            Text(stringResource(R.string.open_settings))
         }
     }
 }
 
 @Composable
 fun PermissionScreenAndroid(
-    // if you want to provide action, do it this way
-    // onPermissionGranted: () -> Unit,
+    // activated: the screen reports 'granted', the host decides where to go
+    onPermissionGranted: () -> Unit,
 ) {
     val context = LocalContext.current
     // LocalActivity instead of 'context as Activity' (LocalContext may be a ContextWrapper)
@@ -202,7 +240,8 @@ fun PermissionScreenAndroid(
     val permission = Manifest.permission.CAMERA
 
     // single flag we track ourselves
-    var hasEverRequested by rememberSaveable { mutableStateOf(false) }
+    // persisted (UiTools: wasPermissionRequested), was: rememberSaveable { false }
+    var hasEverRequested by remember { mutableStateOf(wasPermissionRequested(context, permission)) }
 
     // The UI state is a snapshot of something Compose cannot observe (the permission
     // database), so we keep it in a state and recompute it whenever it may have changed:
@@ -231,6 +270,7 @@ fun PermissionScreenAndroid(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
+        markPermissionRequested(context, permission)
         hasEverRequested = true
         uiState = computeUiState()
         // if (isGranted) onPermissionGranted()
@@ -240,7 +280,7 @@ fun PermissionScreenAndroid(
         RoundedRectangle {
             when (uiState) {
                 PermissionUiState.Granted -> {
-                    GrantedBlock(/* onPermissionGranted */)
+                    GrantedBlock(onPermissionGranted)
                 }
                 PermissionUiState.NotGrantedRequestable -> {
                     NotGrantedRequestableBlock {
@@ -281,12 +321,14 @@ fun computePermissionUiStateAccompanist(status: PermissionStatus, hasEverRequest
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun PermissionScreenAccompanist(
-    // onPermissionGranted: () -> Unit,
+    onPermissionGranted: () -> Unit,
 ) {
     val context = LocalContext.current
-    var hasEverRequested by rememberSaveable { mutableStateOf(false) }
+    // persisted and shared with PermissionScreenAndroid (same permission, same flag)
+    var hasEverRequested by remember { mutableStateOf(wasPermissionRequested(context, Manifest.permission.CAMERA)) }
     // the callback runs when the dialog returns; status itself is observable state
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA) {
+        markPermissionRequested(context, Manifest.permission.CAMERA)
         hasEverRequested = true
     }
 
@@ -307,7 +349,7 @@ fun PermissionScreenAccompanist(
             when (uiState) {
                 PermissionUiState.Granted -> {
                     // UI
-                    GrantedBlock(/* onPermissionGranted */)
+                    GrantedBlock(onPermissionGranted)
                     // or call the callback once: LaunchedEffect(Unit) { onPermissionGranted() }
                 }
                 PermissionUiState.NotGrantedRequestable -> {

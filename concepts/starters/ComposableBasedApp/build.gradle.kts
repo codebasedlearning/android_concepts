@@ -18,7 +18,6 @@ android {
         // targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     /* all set by fhac.android.conventions
@@ -65,13 +64,8 @@ dependencies {
     // 'implementation(project(...' adds another module from the same Gradle build as a dependency
     //implementation(project(":Unit0x00:B_Widgets"))
     //implementation(project(":Unit0x00:C_Db"))
-    testImplementation(libs.junit)
-    // 'androidTestImplementation' available only when compiling/running unit tests, not included in the final app
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
+    // The template's test setup (junit, espresso, ui-test-junit4, test runner) is removed
+    //  from all apps; tests and their dependencies are explained in concepts/testing.
     // 'debugImplementation' only exists in the debug build variant
     debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }

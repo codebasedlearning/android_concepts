@@ -35,5 +35,9 @@ class SensorViewModel : ViewModel() {
     val batteryData: StateFlow<Float> = sensorRepository.startBatteryUpdates()
         .stateIn(viewModelScope, stopTimeout, 0f)
 
+    // so the screen can say 'not available' instead of showing zeros
+    val hasAccelerometer: Boolean get() = sensorRepository.hasAccelerometer
+    val hasGyroscope: Boolean get() = sensorRepository.hasGyroscope
+
     fun getSensorList() = sensorRepository.getSensorList()
 }
