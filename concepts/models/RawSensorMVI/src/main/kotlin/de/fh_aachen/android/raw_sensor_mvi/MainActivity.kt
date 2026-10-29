@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import de.fh_aachen.android.raw_sensor.TemperatureUnit
 import de.fh_aachen.android.raw_sensor_mvi.sensors.TemperatureIntent
 import de.fh_aachen.android.raw_sensor_mvi.sensors.TemperatureMviViewModel
 import de.fh_aachen.android.ui_tools.BackgroundImage
@@ -99,7 +101,8 @@ fun CityRoute(viewModel: TemperatureMviViewModel = viewModel(factory = Temperatu
         // single fields instead of the whole state object: CityBox needs to know nothing
         //  about TemperatureViewState, and in bigger screens each child gets only what it reads
         //  (better skipping). For this tiny box it makes no measurable difference.
-        temperature = state.temperature,
+        temperature = state.displayTemperature,
+        unit = state.unit,
         isCalibrating = state.isCalibrating,
         onIntent = viewModel::dispatch,
     )
@@ -108,6 +111,7 @@ fun CityRoute(viewModel: TemperatureMviViewModel = viewModel(factory = Temperatu
 @Composable
 fun CityBox(
     temperature: Int,
+    unit: TemperatureUnit,
     isCalibrating: Boolean,
     onIntent: (TemperatureIntent) -> Unit,
     modifier: Modifier = Modifier,      // Compose convention: first optional parameter
@@ -122,8 +126,13 @@ fun CityBox(
         Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).fillMaxHeight().background(containerColor),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = stringResource(R.string.temperature, temperature),
-                modifier = Modifier.padding(end = 8.dp, start = 8.dp),
+            // Tap on the temperature switches the unit (°C <-> °F): one more intent, nothing else.
+            //  clickable before padding, so the ripple covers the padding; onClickLabel tells
+            //  screen readers what the tap does.
+            Text(text = stringResource(R.string.temperature, temperature, unit.symbol),
+                modifier = Modifier
+                    .clickable(onClickLabel = stringResource(R.string.toggle_unit)) { onIntent(TemperatureIntent.ToggleUnitClicked) }
+                    .padding(end = 8.dp, start = 8.dp),
                 color = contentColor,
                 fontSize = 24.sp
             )
@@ -151,8 +160,8 @@ fun CityBox(
 private fun CityBoxPreview() {
     ConceptTheme {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            CityBox(temperature = 7, isCalibrating = false, onIntent = {})
-            CityBox(temperature = 7, isCalibrating = true, onIntent = {})
+            CityBox(temperature = 7, unit = TemperatureUnit.Celsius, isCalibrating = false, onIntent = {})
+            CityBox(temperature = 45, unit = TemperatureUnit.Fahrenheit, isCalibrating = true, onIntent = {})
         }
     }
 }

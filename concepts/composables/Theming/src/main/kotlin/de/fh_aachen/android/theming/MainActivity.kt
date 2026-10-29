@@ -54,7 +54,7 @@ import de.fh_aachen.android.theming.theme.extendedColors
 /* ---- TOC ----
    Theming with Material 3:
     - the theme is state at the top of the tree (dark mode, dynamic color as switches)
-    - color ROLES instead of color values (a swatch grid of the scheme)
+    - color roles instead of color values (a swatch grid of the scheme)
     - typography and shapes, picked up by components automatically
     - own tokens (success, warning) the same way MaterialTheme does it
     - a nested theme for one subtree

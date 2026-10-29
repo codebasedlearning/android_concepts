@@ -19,7 +19,7 @@ import de.fh_aachen.android.activity_lifecycle.models.InputDataModel
  */
 class ActivityLifecycleApplication : Application() {
 
-    val inputModel = InputDataModel()
+    val appInputDataModel = InputDataModel()
 
     override fun onCreate() {
         super.onCreate()

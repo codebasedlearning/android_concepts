@@ -63,16 +63,22 @@ import kotlinx.coroutines.SupervisorJob
  *  It hid the dependency: TemperatureMviViewModel reached out to a global, so it could not be
  *  created in a unit test without a running Application, and it depended on the concrete
  *  TemperatureRepository instead of the SensorFlow interface.
- *  Now this class is only the 'composition root' that creates the long-lived objects; the
- *  ViewModel receives the repository through its constructor (TemperatureMviViewModel.Factory).
- *  Identical to RawSensorMVVM, so the two apps differ only in the pattern.
+ *  Now AppContainer is the 'composition root' that creates the long-lived objects, and the
+ *  Application only holds it; the ViewModels receive the repository through their constructors
+ *  (TemperatureMviViewModel.Factory), together with a SavedStateHandle.
+ *  Identical to RawSensorMVVM (see the remarks there), so the two apps differ only in the pattern.
  *
  * use DI if you like (Koin, Hilt) - they generate/replace exactly this factory
  */
-class RawSensorMVIApplication : Application() {
+class AppContainer {
     // SupervisorJob ensures that a failing child coroutine does not cancel the others.
     // eager instead of 'by lazy', see the lazy-or-eager rule in RawSensorMVVM's Application.kt
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val temperatureRepository: SensorFlow = TemperatureRepository(appScope)
+}
+
+class RawSensorMVIApplication : Application() {
+    // singletons live in the container, ViewModels never do (see RawSensorMVVM's Application.kt)
+    val container = AppContainer()
 }

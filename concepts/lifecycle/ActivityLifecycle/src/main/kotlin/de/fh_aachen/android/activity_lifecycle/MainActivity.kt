@@ -56,10 +56,19 @@ import de.fh_aachen.android.ui_tools.ConceptTheme
 
    Try it:
     - type into all six fields, rotate the device, watch the fields and Logcat (tag MAIN),
-    - process death: send the app to the background (Home), then
+    - process death: send the app to the background (Home), wait until Logcat shows onStop
+      (and onSaveInstanceState), then
           adb shell am kill de.fh_aachen.android.activity_lifecycle
-      and return via 'recent apps'. Android restores the Activity in a NEW process: only 2 and 6
-      keep their text. (Developer options -> "Don't keep activities" is different: it destroys
+          adb shell pidof de.fh_aachen.android.activity_lifecycle     # no output = process gone
+      and return via 'recent apps' (not the launcher icon). Android restores the Activity in a
+      new process: only 2 and 6 keep their text.
+      'am kill' only kills processes that are safe to kill, i.e. cached background
+       processes - in the foreground, or right after Home, it silently does nothing. If pidof
+       still prints a number, wait a few seconds or kill it as the app's own user (works for
+       debug builds; the app must still be in the background, the state is saved in onStop):
+          adb shell run-as de.fh_aachen.android.activity_lifecycle kill <pid>
+       Not 'am force-stop' or Android Studio's stop button: they also discard the saved state,
+       which is a different scenario (the user ended the app). (Developer options -> "Don't keep activities" is different: it destroys
       the Activity but keeps the process - then 4 survives, and 5 does not.)
 
    The rule of thumb: pure UI state (what is typed, scroll position) -> rememberSaveable;
@@ -71,7 +80,7 @@ const val TAG = "MAIN"
 
 class MainActivity : ComponentActivity() {
     // a plain field: it lives exactly as long as this Activity instance (variant 3)
-    private val inputModel = InputDataModel()
+    private val activityInputDataModel = InputDataModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,7 +90,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ConceptTheme {
-                InputBox(activityModel = inputModel)
+                InputBox(inputDataModel = activityInputDataModel)
             }
         }
     }
@@ -111,7 +120,10 @@ class MainActivity : ComponentActivity() {
         Log.i(TAG, "onStop")            // not visible any more
     }
 
-    // new: here rememberSaveable and SavedStateHandle write their values into the Bundle
+    // here rememberSaveable and SavedStateHandle write their values into the Bundle
+    // In a Compose + ViewModel + SavedStateHandle setup, you don’t override it,
+    // and in most modern apps you’ll never write it once.
+    // If you ever do override it, call super, or you silently switch off all save mechanics.
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         Log.i(TAG, "onSaveInstanceState")
@@ -124,7 +136,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun InputBox(activityModel: InputDataModel) {
+fun InputBox(inputDataModel: InputDataModel) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Image(
             painter = painterResource(id = R.drawable.library_small),
@@ -149,7 +161,7 @@ fun InputBox(activityModel: InputDataModel) {
                  */
                 InputVersion1()
                 InputVersion2()
-                InputVersion3(inputModel = activityModel)   // here we need the model
+                InputVersion3(inputDataModel = inputDataModel)   // here we need the model
                 InputVersion4()
                 InputVersion5()
                 InputVersion6()
@@ -168,6 +180,8 @@ fun InputVersion1() {
 
 // 'rememberSaveable' is similar to remember but stores the value in the saved instance state,
 // preserving it across configuration changes - and process death
+// Use rememberSaveable	for pure UI element state and ViewModel + SavedStateHandle
+// for Screen / business state or larger objects
 @Composable
 fun InputVersion2() {
     var name by rememberSaveable { mutableStateOf("") }
@@ -177,30 +191,41 @@ fun InputVersion2() {
 // inputModel is passed into the composable function,
 // here it depends on the lifetime of the calling Activity instance
 @Composable
-fun InputVersion3(inputModel: InputDataModel) {
-    InputBlock(label = "3 · Activity field", value = inputModel.name.value, onValueChange = { inputModel.name.value = it })
+fun InputVersion3(inputDataModel: InputDataModel) {
+    InputBlock(label = "3 · Activity field", value = inputDataModel.name.value, onValueChange = { inputDataModel.name.value = it })
 }
 
 // here the inputModel lives in the Application, i.e. as long as the process
 // reached via the Context instead of a static 'ActivityLifecycleApplication.instance'
+// note: this is a hidden dependency, so technically this works, but from a test or
+// maintenance pov is it not optimal.
 @Composable
 fun InputVersion4() {
     val app = LocalContext.current.applicationContext as ActivityLifecycleApplication
-    val inputModel = app.inputModel
+    val inputModel = app.appInputDataModel
     InputBlock(label = "4 · Application", value = inputModel.name.value, onValueChange = { inputModel.name.value = it })
 }
 
+// Works (with no parameters for the ViewModel) and in a composable it is the standard Compose way.
+// For DI, say Hilt or Koin, this is replaced by hiltViewModel() resp. koinViewModel().
 @Composable
 fun InputVersion5() {
-    val inputModel: InputViewModel = viewModel()
-    InputBlock(label = "5 · ViewModel", value = inputModel.name.value, onValueChange = { inputModel.name.value = it })
+    val viewModel: InputViewModel = viewModel()
+    var name by viewModel.name      // or viewModel.name.value
+    InputBlock(label = "5 · ViewModel", value = name, onValueChange = { name = it })
 }
 
+// Taking app death into account but needs more folklore.
+// collectAsStateWithLifecycle(): it launches a collector coroutine that writes every value into
+// a MutableState. It’s a bridge from flow-world into Compose-world.
 @Composable
 fun InputVersion6() {
+    //val viewModel: SavedInputViewModel = viewModel()
+    //val name by viewModel.name.collectAsStateWithLifecycle()
+    //InputBlock(label = "6 · ViewModel + SavedStateHandle", value = name, onValueChange = viewModel::onNameChange)
     val viewModel: SavedInputViewModel = viewModel()
-    val name by viewModel.name.collectAsStateWithLifecycle()
-    InputBlock(label = "6 · ViewModel + SavedStateHandle", value = name, onValueChange = viewModel::onNameChange)
+    var name by viewModel.name
+    InputBlock(label = "6 · ViewModel + SavedStateHandle", value = name, onValueChange = { name = it })
 }
 
 /* One version, but not optimal - why?

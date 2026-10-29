@@ -6,6 +6,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.SavedStateHandleSaveableApi
+import androidx.lifecycle.viewmodel.compose.saveable
 import kotlinx.coroutines.flow.StateFlow
 
 interface InputModel {
@@ -16,6 +18,15 @@ interface InputModel {
 class InputDataModel : InputModel {
     override val name = mutableStateOf("")
 }
+
+/*
+ * If we want a stricter interface or more control, we could use
+ *
+    interface InputModel {
+        val name: State<String>
+        fun onNameChange(new: String)
+    }
+ */
 
 /*
  * A ViewModel lives in a ViewModelStore, owned by a ViewModelStoreOwner (here: the Activity).
@@ -29,6 +40,8 @@ class InputDataModel : InputModel {
  *
  * Implementation by delegation: 'InputModel by InputDataModel()' lets the ViewModel reuse the
  * plain model's implementation; the important part is ': ViewModel()'.
+ * A valid alternative would be composition instead of delegation, or
+ * just put the state into the ViewModel (not sooo nice).
  */
 class InputViewModel : ViewModel(), InputModel by InputDataModel()
 
@@ -38,7 +51,7 @@ class InputViewModel : ViewModel(), InputModel by InputDataModel()
  *  behind a key-value API, saved and restored by the system like rememberSaveable.
  *  The default factory knows how to pass it in, so viewModel() still works without our own.
  *  Only for small, serialisable UI state (the text being typed, an id) - not for big data.
- */
+
 class SavedInputViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     val name: StateFlow<String> = savedStateHandle.getStateFlow(KEY_NAME, "")
 
@@ -48,5 +61,16 @@ class SavedInputViewModel(private val savedStateHandle: SavedStateHandle) : View
 
     private companion object {
         const val KEY_NAME = "name"
+    }
+}
+*/
+
+// @OptIn: I know this API isn’t considered final, I’m using it anyway.
+@OptIn(SavedStateHandleSaveableApi::class)
+class SavedInputViewModel(savedStateHandle: SavedStateHandle) : ViewModel(), InputModel {
+    override val name = savedStateHandle.saveable(KEY_NAME) { mutableStateOf("") }
+
+    private companion object {
+        const val KEY_NAME = "input_field"
     }
 }

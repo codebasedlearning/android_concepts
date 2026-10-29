@@ -139,7 +139,7 @@ Recomposition
     In Compose, you call the composable function again with new data. Doing so causes the function
     to be recomposed - the function runs again and emits the UI with the new data.
     The Compose framework can intelligently recompose only the components that changed.
-    Recomposition is not drawing: composition decides WHAT to show, layout and drawing
+    Recomposition is not drawing: composition decides what to show, layout and drawing
      follow as separate phases (see below). A changed color, for example, may only need a redraw.
 
   - Recomposition: Happens when the state value changes (e.g., MutableState is updated).

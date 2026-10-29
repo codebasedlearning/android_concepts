@@ -2,13 +2,16 @@
 
 package de.fh_aachen.android.raw_sensor_mvi.sensors
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import de.fh_aachen.android.raw_sensor.SensorData
 import de.fh_aachen.android.raw_sensor.SensorFlow
+import de.fh_aachen.android.raw_sensor.TemperatureUnit
 import de.fh_aachen.android.raw_sensor_mvi.RawSensorMVIApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,6 +27,8 @@ import kotlinx.coroutines.launch
  *  – UI instead sends intents via dispatch(intent).
  *  – ViewModel exposes immutable state via StateFlow<TemperatureViewState>.
  *  – Sensor updates are collected and reduced into new state
+ *  – The persisted part of the state (the unit) lives in a SavedStateHandle and enters the
+ *    store as messages, like the sensor values.
  */
 
 // ----------------------------
@@ -33,11 +38,16 @@ import kotlinx.coroutines.launch
 data class TemperatureViewState(
     // No default '= 0' any more. 0 °C is a valid temperature, so it was a bad
     //  'not loaded yet' marker; the ViewModel seeds the state from the repository instead.
-    val temperature: Int,
+    val temperature: Int,                               // always °C, as the sensor delivers it
+    val unit: TemperatureUnit = TemperatureUnit.Celsius,
     val isCalibrating: Boolean = false,
     // more fields like
     // val error: String? = null
-)
+) {
+    // Derived, not stored: a stored 'displayTemperature' could get out of sync with
+    //  temperature and unit. A plain getter in a data class is not part of equals/copy.
+    val displayTemperature: Int get() = unit.fromCelsius(temperature)
+}
 
 /**
  * Intents = everything the View "wants to do".
@@ -45,6 +55,7 @@ data class TemperatureViewState(
  */
 sealed interface TemperatureIntent {
     data object CalibrateClicked : TemperatureIntent      // 'data object': readable toString()
+    data object ToggleUnitClicked : TemperatureIntent
 
     // data class SetThreshold(val value: Int) : TemperatureIntent
     // usage: TemperatureIntent.SetThreshold(42)
@@ -78,6 +89,7 @@ internal sealed interface Msg {
     data class SensorUpdated(val data: SensorData) : Msg
     data object CalibrationStarted : Msg
     data object CalibrationFinished : Msg
+    data class UnitChanged(val unit: TemperatureUnit) : Msg
 }
 
 /*
@@ -95,6 +107,7 @@ internal fun reduce(state: TemperatureViewState, msg: Msg): TemperatureViewState
     is Msg.SensorUpdated    -> state.copy(temperature = msg.data.rawValue)
     Msg.CalibrationStarted  -> state.copy(isCalibrating = true)
     Msg.CalibrationFinished -> state.copy(isCalibrating = false)
+    is Msg.UnitChanged      -> state.copy(unit = msg.unit)
 }
 
 // ----------------------------
@@ -103,11 +116,34 @@ internal fun reduce(state: TemperatureViewState, msg: Msg): TemperatureViewState
 
 class TemperatureMviViewModel(
     // Constructor injection; the interface instead of the concrete TemperatureRepository.
-    private val repository: SensorFlow
+    private val repository: SensorFlow,
+    private val savedStateHandle: SavedStateHandle,     // a test simply passes SavedStateHandle()
 ) : ViewModel() {
 
-    // seeded from the repository, see TemperatureViewState
-    private val _state = MutableStateFlow(TemperatureViewState(temperature = repository.data.value.rawValue))
+    /*
+     * SavedStateHandle in MVI: only a *slice* of the state is saved.
+     *  Rule: save what the user did, reload what the app fetched.
+     *   - unit:          user choice -> handle, survives process death.
+     *   - temperature:   sensor data -> reloaded.
+     *   - isCalibrating: never! The calibration coroutine dies with the process; a restored
+     *                    'true' would show a spinner for an operation nobody runs any more.
+     *  So we do not save the whole TemperatureViewState (that would also need it to be
+     *  Parcelable, and it would grow with every field).
+     *
+     *  Who owns the unit? The handle - it is the single source of truth, the store state only
+     *  mirrors it. The executor writes the handle (toggleUnit), the handle's StateFlow feeds
+     *  UnitChanged into the funnel, like the sensor feeds SensorUpdated. So the reducer stays
+     *  pure and still sees every state change, and there is no second copy of the unit that
+     *  could get out of sync.
+     *  (Alternative: write the handle inside accept() after every reduce. Works, but then a
+     *  side effect sits in the funnel, and it runs once per sensor tick.)
+     */
+    private val savedUnit: StateFlow<TemperatureUnit> = savedStateHandle.getStateFlow(KEY_UNIT, TemperatureUnit.Celsius)
+
+    // seeded from the repository and the handle, see TemperatureViewState
+    private val _state = MutableStateFlow(
+        TemperatureViewState(temperature = repository.data.value.rawValue, unit = savedUnit.value)
+    )
 
     // Reducers are pure functions: old State + input -> new State. 'update' applies them
     // atomically (no lost updates if two coroutines change the state at the same time).
@@ -120,14 +156,15 @@ class TemperatureMviViewModel(
      *  (now cold) sensor running. MVVM gets lifecycle-awareness for free with
      *  map{}.stateIn(WhileSubscribed); an imperative store needs this small construction:
      *   – channelFlow runs only while somebody collects 'state' (stateIn + WhileSubscribed),
-     *   – meanwhile a child coroutine feeds sensor values into the funnel, and every new state
-     *     is forwarded downstream,
+     *   – meanwhile child coroutines feed sensor values and unit changes into the funnel, and
+     *     every new state is forwarded downstream,
      *   – when the UI stops collecting (+5s grace for rotation), both stop, and the repository
      *     stops the sensor.
      *  _state itself survives, so isCalibrating etc. are not lost while in the background.
      */
     val state: StateFlow<TemperatureViewState> = channelFlow {
         launch { repository.data.collect { accept(Msg.SensorUpdated(it)) } }
+        launch { savedUnit.collect { accept(Msg.UnitChanged(it)) } }
         _state.collect { send(it) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _state.value)
 
@@ -139,7 +176,13 @@ class TemperatureMviViewModel(
     fun dispatch(intent: TemperatureIntent) {
         when (intent) {
             TemperatureIntent.CalibrateClicked -> calibrate()
+            TemperatureIntent.ToggleUnitClicked -> toggleUnit()
         }
+    }
+
+    // Side effect: write the handle. The new unit comes back as Msg.UnitChanged (see savedUnit).
+    private fun toggleUnit() {
+        savedStateHandle[KEY_UNIT] = savedUnit.value.toggled()
     }
 
     private fun calibrate() {
@@ -160,11 +203,18 @@ class TemperatureMviViewModel(
     }
 
     // same factory pattern as in MVVM; this[APPLICATION_KEY] returns Application?
+    //  createSavedStateHandle() restores what was saved for this ViewModel (after process death)
+    //  and registers the handle for the next snapshot, see TemperatureViewModel in RawSensorMVVM.
     companion object {
+        internal const val KEY_UNIT = "unit"    // internal: the fold store uses the same key
+
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as RawSensorMVIApplication
-                TemperatureMviViewModel(app.temperatureRepository)
+                TemperatureMviViewModel(
+                    repository = app.container.temperatureRepository,
+                    savedStateHandle = createSavedStateHandle(),
+                )
             }
         }
     }

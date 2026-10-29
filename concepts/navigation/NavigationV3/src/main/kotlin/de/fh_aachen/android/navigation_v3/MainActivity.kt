@@ -157,6 +157,7 @@ fun MainScreen() {
     //  Derived state, nothing stored twice: everything the chrome shows is computed from
     //  the back stack - can we go back, which tab is selected, what the stack looks like.
     val canGoBack = backStack.size > 1
+    // The top of the stack isn’t always a tab.
     val selectedTab = backStack.lastOrNull { key -> topLevelDestinations.any { it.key == key } }
 
     Scaffold(
