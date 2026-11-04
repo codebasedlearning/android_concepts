@@ -52,7 +52,8 @@ fun includeConcepts(vararg unitRoots: String) {
 }
 
 includeConcepts(
-    "starters", "composables", "navigation", "permissions",
+    "android_starters", "project_starters",
+    "composables", "navigation", "permissions",
     "rest", "sensors", "database", "models", "preferences",
     "dialogs", "testing",          // [review] new: concepts/testing
     "lifecycle",                   // [review] new: concepts/lifecycle

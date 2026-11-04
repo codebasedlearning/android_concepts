@@ -11,6 +11,7 @@
     <string name="allow_camera">Allow camera</string>
     <string name="rationale">You denied camera before.\nWe use it to take photos.</string>
     <string name="try_again">Try again</string>
-    <string name="blocked">Camera permission seems blocked.\nPlease enable it in system settings.</string>
+    <string name="blocked">Camera permission may be blocked.\nTry again, or enable it in the system settings.</string>
     <string name="open_settings">Open settings</string>
+    <string name="no_camera">This device has no camera.</string>
 </resources>

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -113,7 +114,7 @@ fun PermissionsApp() {
             entryProvider = entryProvider<NavKey> {
                 entry<Screen.Home> {
                     ScreenWithBackground(background_castle) {
-                        LoginScreen(
+                        HomeScreen(
                             onOpenAndroidDialog = { backStack.navigateToTopLevel(Screen.PermissionAndroid) },
                             onOpenAccompanistDialog = { backStack.navigateToTopLevel(Screen.PermissionAccompanist) },
                         )
@@ -134,7 +135,7 @@ fun PermissionsApp() {
 }
 
 @Composable
-fun LoginScreen(onOpenAndroidDialog: () -> Unit, onOpenAccompanistDialog: () -> Unit) {
+fun HomeScreen(onOpenAndroidDialog: () -> Unit, onOpenAccompanistDialog: () -> Unit) {
     val context = LocalContext.current
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -216,17 +217,28 @@ fun NotGrantedShowRationaleBlock(
     }
 }
 
+// 'Maybe' blocked (see computePermissionUiState): try again first, Settings as the way out.
 @Composable
 fun NotGrantedMaybePermanentlyDeniedBlock(
-    action: () -> Unit
+    onTryAgain: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(stringResource(R.string.blocked))
         Spacer(Modifier.height(8.dp))
-        Button(onClick = action ) {
+        Button(onClick = onTryAgain) {
+            Text(stringResource(R.string.try_again))
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = onOpenSettings) {
             Text(stringResource(R.string.open_settings))
         }
     }
+}
+
+@Composable
+fun NoCameraBlock() {
+    Text(stringResource(R.string.no_camera))
 }
 
 @Composable
@@ -239,8 +251,7 @@ fun PermissionScreenAndroid(
     val activity = LocalActivity.current ?: return
     val permission = Manifest.permission.CAMERA
 
-    // single flag we track ourselves
-    // persisted (UiTools: wasPermissionRequested), was: rememberSaveable { false }
+    // single flag we track ourselves, persisted (see PermissionState.kt), was: rememberSaveable { false }
     var hasEverRequested by remember { mutableStateOf(wasPermissionRequested(context, permission)) }
 
     // The UI state is a snapshot of something Compose cannot observe (the permission
@@ -278,7 +289,9 @@ fun PermissionScreenAndroid(
 
     Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.TopCenter) {
         RoundedRectangle {
-            when (uiState) {
+            if (!hasCamera(context)) {
+                NoCameraBlock()
+            } else when (uiState) {
                 PermissionUiState.Granted -> {
                     GrantedBlock(onPermissionGranted)
                 }
@@ -293,9 +306,10 @@ fun PermissionScreenAndroid(
                     }
                 }
                 PermissionUiState.NotGrantedMaybePermanentlyDenied -> {
-                    NotGrantedMaybePermanentlyDeniedBlock {
-                        gotoSettingsActivity(context)
-                    }
+                    NotGrantedMaybePermanentlyDeniedBlock(
+                        onTryAgain = { permissionLauncher.launch(permission) },
+                        onOpenSettings = { gotoSettingsActivity(context) },
+                    )
                 }
             }
         }
@@ -303,6 +317,11 @@ fun PermissionScreenAndroid(
 }
 
 /*
+ * Accompanist Permissions: still maintained, but marked @ExperimentalPermissionsApi for years
+ *  (Accompanist is Google's 'labs' for Compose). Shown here as the comparison; the stable,
+ *  official way is the Activity Result API above. Nice detail: rememberPermissionState refreshes
+ *  its status on ON_RESUME by itself - the LifecycleResumeEffect we wrote by hand above.
+ *
  * Accompanist only tells us 'granted', 'denied' and 'shouldShowRationale'. "Denied without
  * rationale" means either "never asked" or "don't ask again" - the same ambiguity as above,
  * so we need our own hasEverRequested flag here, too.
@@ -346,7 +365,9 @@ fun PermissionScreenAccompanist(
 
     Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.TopCenter) {
         RoundedRectangle {
-            when (uiState) {
+            if (!hasCamera(context)) {
+                NoCameraBlock()
+            } else when (uiState) {
                 PermissionUiState.Granted -> {
                     // UI
                     GrantedBlock(onPermissionGranted)
@@ -363,9 +384,10 @@ fun PermissionScreenAccompanist(
                     }
                 }
                 PermissionUiState.NotGrantedMaybePermanentlyDenied -> {
-                    NotGrantedMaybePermanentlyDeniedBlock {
-                        gotoSettingsActivity(context)
-                    }
+                    NotGrantedMaybePermanentlyDeniedBlock(
+                        onTryAgain = { cameraPermissionState.launchPermissionRequest() },
+                        onOpenSettings = { gotoSettingsActivity(context) },
+                    )
                 }
             }
         }

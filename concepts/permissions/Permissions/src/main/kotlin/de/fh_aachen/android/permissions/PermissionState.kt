@@ -4,6 +4,7 @@ package de.fh_aachen.android.permissions
 
 import android.app.Activity
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.edit
 import de.fh_aachen.android.ui_tools.isPermissionGranted
@@ -38,11 +39,19 @@ fun wasPermissionRequested(context: Context, permission: String): Boolean =
 fun markPermissionRequested(context: Context, permission: String) =
     context.permissionPrefs().edit { putBoolean(permission, true) }
 
+/*
+ * The manifest declares the camera as not required (uses-feature ... required="false"), so the
+ *  app also installs on devices without one (some tablets, Chromebooks, TVs). Check before asking
+ *  for a permission to hardware that isn't there.
+ */
+fun hasCamera(context: Context): Boolean =
+    context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+
 enum class PermissionUiState {
     Granted,
     NotGrantedRequestable,                  // can show dialog
     NotGrantedShowRationale,                // we should explain before asking
-    NotGrantedMaybePermanentlyDenied        // suggest settings; best-effort guess
+    NotGrantedMaybePermanentlyDenied        // offer 'try again' AND settings; best-effort guess
 }
 
 fun computePermissionUiState(
@@ -62,7 +71,14 @@ fun computePermissionUiState(
     if (shouldShowRationale)
         return PermissionUiState.NotGrantedShowRationale
 
-    // This is our best-effort "maybe permanently denied / don't ask again / blocked".
+    /*
+     * Asked before, no rationale: our best-effort "maybe permanently denied / blocked".
+     *  'Maybe', because these look exactly the same, but a new request WOULD show the dialog:
+     *   - the user dismissed the dialog (Back, tap outside) - since Android 11 not a denial,
+     *   - the permission was auto-reset (app unused for a while),
+     *   - a one-time grant ("Only this time") has expired.
+     *  So the UI offers both: try again (if blocked, it returns at once with 'denied') and Settings.
+     */
     return PermissionUiState.NotGrantedMaybePermanentlyDenied
 }
 

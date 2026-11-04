@@ -8,13 +8,14 @@ the convention plugin in `build-logic`; all versions live in `gradle/libs.versio
 
 | Folder | Modules | Topics |
 | --- | --- | --- |
-| `starters` | XmlBasedApp, ComposableBasedApp | Views + XML vs. Compose |
+| `android_starters` | XmlBasedApp, ComposableBasedApp | Views + XML vs. Compose |
+| `project_starters` | MvvmNav3App, MvvmSupabaseApp | project templates: MVVM + Navigation 3; DataStore, resp. Supabase (Auth, views/RPC, Storage, Realtime) |
 | `lifecycle` | ActivityLifecycle | Activity lifecycle, lifetime of state: remember, rememberSaveable, Application, ViewModel, SavedStateHandle |
 | `composables` | TheIdeaOfComposables, ComposableExamples, ComposablesWithState, ComposableCalculator, Theming | composables, layouts, modifiers, state, recomposition, state hoisting, Material 3 theming |
 | `navigation` | NavigationV3, NavigationV3Drawer | Navigation 3 (back stack as state), navigation drawer |
 | `models` | RawSensorMVVM, RawSensorMVI, RawSensorLib | MVVM vs. MVI, unidirectional data flow, StateFlow, cold flows, constructor injection |
 | `permissions` | Permissions | runtime permissions, rationale, Accompanist |
-| `rest` | Rest, Supabase | Retrofit, OkHttp, Moshi; Supabase (Auth, Postgrest, Realtime) with SQL setup scripts |
+| `rest` | Rest | Retrofit, OkHttp, Moshi |
 | `database` | Room | Room, DAOs, Flows, transactions |
 | `preferences` | Preferences | DataStore |
 | `sensors` | Sensors, Location, Camera, Photo1, Photo2 | sensors, callbackFlow, location + maps, camera intents, MediaStore, CameraX |

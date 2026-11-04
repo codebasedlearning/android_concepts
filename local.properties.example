@@ -3,19 +3,8 @@
 # sdk.dir=...
 # [...]
 
-# copy supabase items to your local.properties
-
-# needed for supabase connections
-supabase_url=<project>.supabase.co
-supabase_anon_key=<long key from 'project settings - API keys'>
-
-# not needed for mobile apps, usable as db-admin
-supabase_db_port=5432
-supabase_db_database=postgres
-supabase_db_driver=org.postgresql.Driver
-supabase_db_user=postgres
-supabase_db_password=<reset from 'Database - Settings'>
-
-# default user, not needed in production
-supabase_user_email=<user from 'Authentication'>
-supabase_user_password=<password from 'Authentication'>
+# MvvmSupabaseApp (database: python_supabase, project settings → Data API / API Keys)
+mobapp_supabase_url=https://<project-ref>.supabase.co
+mobapp_supabase_key=<publishable key sb_publishable_… or legacy anon key>
+# optional, pre-fills the e-mail field
+mobapp_user_email=
