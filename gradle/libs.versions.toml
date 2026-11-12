@@ -6,7 +6,7 @@
 [versions]
 # [review] stays on 9.4.1: 9.5.0 (fixes the Gradle-10 warning 'Configuration.setVisible') is still
 #  RC (rc02, Oct 2026) and needs Gradle >= 9.6 (we have 9.8.1) - bump as soon as it is final
-agp = "9.5.0"
+agp = "9.5.1"
 # [review] 2026-10: catalog checked against the current releases; bumped entries are marked
 kotlin = "2.4.21"                   # [review] was 2.4.20 (bugfix release)
 ksp = "2.3.12"                      # [review] was 2.3.11

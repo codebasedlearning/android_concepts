@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">MVVM Supabase Simple</string>
+    <string name="missing_config">Supabase is not configured.\nAdd mobapp_supabase_url and mobapp_supabase_key to local.properties.</string>
+
+    <string name="title_login">Login</string>
+    <string name="title_cars">Cars</string>
+    <string name="retry">Retry</string>
+
+    <string name="email">E-mail</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="logged_in_as">Logged in as %1$s</string>
+
+    <string name="label_model">%1$s model</string>
+    <string name="car_details">#%1$d · %2$d · %3$s · %4$,.0f €</string>
+    <string name="save">Save</string>
+    <string name="no_cars">No cars.\nRun sql/cars.sql in your Supabase project.</string>
+</resources>

@@ -3,7 +3,8 @@
 # sdk.dir=...
 # [...]
 
-# MvvmSupabaseApp (database: python_supabase, project settings → Data API / API Keys)
+# MvvmSupabaseApp (database: python_supabase) and MvvmSupabaseSimpleApp (database: its sql/cars.sql)
+# both from project settings → Data API / API Keys; the two apps can share one project
 mobapp_supabase_url=https://<project-ref>.supabase.co
 mobapp_supabase_key=<publishable key sb_publishable_… or legacy anon key>
 # optional, pre-fills the e-mail field

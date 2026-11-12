@@ -9,7 +9,7 @@ the convention plugin in `build-logic`; all versions live in `gradle/libs.versio
 | Folder | Modules | Topics |
 | --- | --- | --- |
 | `android_starters` | XmlBasedApp, ComposableBasedApp | Views + XML vs. Compose |
-| `project_starters` | MvvmNav3App, MvvmSupabaseApp | project templates: MVVM + Navigation 3; DataStore, resp. Supabase (Auth, views/RPC, Storage, Realtime) |
+| `project_starters` | MvvmNav3App, MvvmSupabaseApp, MvvmSupabaseSimpleApp | project templates: MVVM + Navigation 3; DataStore, resp. Supabase (Auth, views/RPC, Storage, Realtime), resp. Supabase simple (Auth, one table `public.cars` read + updated directly, SQL in `sql/`) |
 | `lifecycle` | ActivityLifecycle | Activity lifecycle, lifetime of state: remember, rememberSaveable, Application, ViewModel, SavedStateHandle |
 | `composables` | TheIdeaOfComposables, ComposableExamples, ComposablesWithState, ComposableCalculator, Theming | composables, layouts, modifiers, state, recomposition, state hoisting, Material 3 theming |
 | `navigation` | NavigationV3, NavigationV3Drawer | Navigation 3 (back stack as state), navigation drawer |
