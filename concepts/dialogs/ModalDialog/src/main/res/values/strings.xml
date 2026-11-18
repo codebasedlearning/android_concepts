@@ -23,4 +23,6 @@
     <string name="save_item_title">Save item?</string>
     <string name="save_item_text">The item will be stored on this device.</string>
     <string name="save">Save</string>
+    <string name="coffee_confirmed">☕ Coffee it is!</string>
+    <string name="info_text">Just an info, gone in a second</string>
 </resources>

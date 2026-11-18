@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenu      // an extension on the box scope since material3 1.5
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -38,7 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-import de.fh_aachen.android.room.model.ShopViewModel
+import de.fh_aachen.android.room.models.ShopViewModel
 import de.fh_aachen.android.ui_tools.ConceptBackground
 import de.fh_aachen.android.ui_tools.ConceptDestination
 import de.fh_aachen.android.ui_tools.ConceptScaffold
@@ -52,6 +51,7 @@ import kotlinx.serialization.Serializable
 sealed interface Screen : NavKey {
     @Serializable data object Home : Screen
     @Serializable data object DB : Screen
+    @Serializable data object Log : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -81,6 +81,7 @@ fun RoomApp() {
         destinations = listOf(
             ConceptDestination(Screen.Home, R.drawable.icon_home, stringResource(R.string.nav_home)),
             ConceptDestination(Screen.DB, R.drawable.icon_database, stringResource(R.string.nav_database)),
+            ConceptDestination(Screen.Log, R.drawable.icon_log, stringResource(R.string.nav_log)),
         ),
         selected = backStack.lastOrNull(),
         onSelect = { backStack.navigateToTopLevel(it) },
@@ -99,6 +100,11 @@ fun RoomApp() {
                 entry<Screen.DB> {
                     ScreenWithBackground(R.drawable.database_garage) {
                         DatabaseScreen(onGoHome = { backStack.navigateToTopLevel(Screen.Home) })
+                    }
+                }
+                entry<Screen.Log> {
+                    ScreenWithBackground(ConceptBackground.Garage) {
+                        LogScreen()
                     }
                 }
             }
@@ -193,7 +199,7 @@ fun DatabaseScreen(
             CircularIconButton(
                 iconResourceId = R.drawable.baseline_check_24,
                 contentDescription = stringResource(R.string.rename_product),
-                enabled = state.selectedProduct != null && productName != state.selectedProduct?.name,
+                enabled = viewModel.canRename(productName),
             ) {
                 viewModel.renameSelectedProduct(productName)
             }

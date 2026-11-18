@@ -2,8 +2,6 @@
 
 package de.fh_aachen.android.modal_dialog.screens
 
-import androidx.compose.ui.res.stringResource
-import de.fh_aachen.android.modal_dialog.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,48 +32,77 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import de.fh_aachen.android.modal_dialog.R
 import de.fh_aachen.android.ui_tools.RoundedRectangleWithText
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
+// The colors of the bottom sheet; the initial color is one of them, so it shows up as selected.
+private val Palette = listOf(
+    Color(0xFFF44336), Color(0xFFE91E63), Color(0xFF9C27B0),
+    Color(0xFF673AB7), Color(0xFF3F51B5), Color(0xFF2196F3),
+    Color(0xFF03A9F4), Color(0xFF00BCD4), Color(0xFF009688),
+    Color(0xFF4CAF50), Color(0xFF8BC34A), Color(0xFFCDDC39),
+    Color(0xFFFFEB3B), Color(0xFFFFC107), Color(0xFFFF9800),
+    Color(0xFFFF5722), Color(0xFF795548), Color(0xFF607D8B)
+)
+
+// Which picker is open - one value instead of three booleans, cf. OpenDialog.
+enum class OpenPicker { None, Date, Time, Color }
+
 @Composable
 fun PickerScreen() {
-    var openDate by remember { mutableStateOf(false) }
-    var openTime by remember { mutableStateOf(false) }
-    var openColor by remember { mutableStateOf(false) }
-    var selectedColor by remember { mutableStateOf(Color(0xFF6200EE)) }
-    // the pickers' results are kept and shown
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    var selectedTime by remember { mutableStateOf<String?>(null) }
+    /*
+     * rememberSaveable keeps the results across a rotation and a tab switch. It can only save
+     *  what fits into a Bundle, so the state holds simple values and the screen derives the rest:
+     *      Color      -> Int (ARGB),
+     *      LocalDate  -> Long (epoch day, days since 1970-01-01),
+     *      LocalTime  -> Int (minute of the day).
+     *  Alternative: a custom Saver for each type, or a ViewModel with SavedStateHandle.
+     */
+    var openPicker by rememberSaveable { mutableStateOf(OpenPicker.None) }
+    var colorArgb by rememberSaveable { mutableIntStateOf(Palette[5].toArgb()) }
+    var epochDay by rememberSaveable { mutableStateOf<Long?>(null) }
+    var minuteOfDay by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    val selectedColor = Color(colorArgb)
+    val selectedDate = epochDay?.let(LocalDate::ofEpochDay)
+    val selectedTime = minuteOfDay?.let { LocalTime.of(it / 60, it % 60) }
 
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         RoundedRectangleWithText(text = stringResource(R.string.pickers))
         Spacer(modifier = Modifier.height(36.dp))
 
-        Button(onClick = { openDate = true }) {
+        Button(onClick = { openPicker = OpenPicker.Date }) {
             Text(stringResource(R.string.date_picker), fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = { openTime = true }) {
+        Button(onClick = { openPicker = OpenPicker.Time }) {
             Text(stringResource(R.string.time_picker), fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
         if (selectedDate != null || selectedTime != null) {
             Spacer(modifier = Modifier.height(12.dp))
+            // both in the device's format (e.g. "18.11.2026, 19:30" or "Nov 18, 2026, 7:30 PM")
             val dateText = selectedDate?.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)) ?: "–"
-            RoundedRectangleWithText(text = "$dateText, ${selectedTime ?: "–"}")
+            val timeText = selectedTime?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)) ?: "–"
+            RoundedRectangleWithText(text = "$dateText, $timeText")
         }
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -87,61 +114,69 @@ fun PickerScreen() {
                 .height(80.dp)
         ) {}
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = { openColor = true }) {
+        Button(onClick = { openPicker = OpenPicker.Color }) {
             Text(stringResource(R.string.color_picker), fontSize = 24.sp, modifier = Modifier.padding(8.dp))
         }
     }
 
-    if (openDate) {
-        DatePickerSample(
-            onDismiss = { openDate = false },
-            onDateSelected = { millis ->
-                /*
-                 * Careful with time zones: the DatePicker returns midnight UTC of the chosen
-                 * day. Converted with the device's zone, everybody west of Greenwich would see the
-                 * day before (midnight UTC is still 'yesterday' in New York). So: read it as UTC.
-                 */
-                selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                openDate = false
+    // State down: every picker starts with the current value. Events up: the result comes back.
+    when (openPicker) {
+        OpenPicker.None -> {}
+        OpenPicker.Date -> DatePickerSample(
+            initialDate = selectedDate,
+            onDismiss = { openPicker = OpenPicker.None },
+            onDateSelected = { date ->
+                epochDay = date.toEpochDay()
+                openPicker = OpenPicker.None
             }
         )
-    }
-
-    if (openTime) {
-        TimePickerSample(
-            onDismiss = { openTime = false },
-            onTimeSelected = { hour, minute ->
-                selectedTime = "%02d:%02d".format(hour, minute)
-                openTime = false
+        OpenPicker.Time -> TimePickerSample(
+            initialTime = selectedTime,
+            onDismiss = { openPicker = OpenPicker.None },
+            onTimeSelected = { time ->
+                minuteOfDay = time.hour * 60 + time.minute
+                openPicker = OpenPicker.None
             }
         )
-    }
-
-    if (openColor) {
-        ColorPickerBottomSheet(
+        OpenPicker.Color -> ColorPickerBottomSheet(
             initialColor = selectedColor,
-            onDismiss = { openColor = false },
+            onDismiss = { openPicker = OpenPicker.None },
             onColorSelected = {
-                selectedColor = it
-                openColor = false
+                colorArgb = it.toArgb()
+                openPicker = OpenPicker.None
             }
         )
     }
 }
 
+/*
+ * Careful with time zones: the DatePicker works with midnight UTC of the chosen day, in both
+ *  directions. Converted with the device's zone, everybody west of Greenwich would see the day
+ *  before (midnight UTC is still 'yesterday' in New York). So: convert with UTC, here and only here -
+ *  outside, the date is a LocalDate, without any time or zone.
+ */
 @Composable
 fun DatePickerSample(
+    initialDate: LocalDate?,
     onDismiss: () -> Unit,
-    onDateSelected: (Long) -> Unit
+    onDateSelected: (LocalDate) -> Unit
 ) {
-    val state = rememberDatePickerState()
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = initialDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli()
+    )
 
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = {
-                state.selectedDateMillis?.let(onDateSelected)
-            }) { Text(stringResource(R.string.ok)) }
+            // no date selected yet -> nothing to confirm
+            TextButton(
+                onClick = {
+                    state.selectedDateMillis?.let { millis ->
+                        onDateSelected(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
+                    }
+                },
+                enabled = state.selectedDateMillis != null,
+            ) { Text(stringResource(R.string.ok)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
@@ -151,18 +186,22 @@ fun DatePickerSample(
     }
 }
 
+// Starts with the last chosen time, or now. 12 or 24 hours follows the device setting
+// (the default of rememberTimePickerState), and so does the display on the screen.
 @Composable
 fun TimePickerSample(
+    initialTime: LocalTime?,
     onDismiss: () -> Unit,
-    onTimeSelected: (hour: Int, minute: Int) -> Unit
+    onTimeSelected: (LocalTime) -> Unit
 ) {
-    val state = rememberTimePickerState()
+    val start = initialTime ?: LocalTime.now()
+    val state = rememberTimePickerState(initialHour = start.hour, initialMinute = start.minute)
 
     TimePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = {
-                onTimeSelected(state.hour, state.minute)
+                onTimeSelected(LocalTime.of(state.hour, state.minute))
             }) { Text(stringResource(R.string.ok)) }
         },
         dismissButton = {
@@ -181,18 +220,9 @@ fun ColorPickerBottomSheet(
     onDismiss: () -> Unit,
     onColorSelected: (Color) -> Unit
 ) {
-    val colors = listOf(
-        Color(0xFFF44336), Color(0xFFE91E63), Color(0xFF9C27B0),
-        Color(0xFF673AB7), Color(0xFF3F51B5), Color(0xFF2196F3),
-        Color(0xFF03A9F4), Color(0xFF00BCD4), Color(0xFF009688),
-        Color(0xFF4CAF50), Color(0xFF8BC34A), Color(0xFFCDDC39),
-        Color(0xFFFFEB3B), Color(0xFFFFC107), Color(0xFFFF9800),
-        Color(0xFFFF5722), Color(0xFF795548), Color(0xFF607D8B)
-    )
-
     /*
      * Close the sheet with its slide-down animation. Before, the caller simply removed it
-     * from the composition (openColor = false), so it vanished abruptly. The Material pattern:
+     * from the composition (openPicker = None), so it vanished abruptly. The Material pattern:
      * animate hide() first (a suspend function), and remove the sheet when that is done.
      * Swipe-down and tap-outside go through onDismissRequest, where the sheet is already hidden.
      */
@@ -218,7 +248,7 @@ fun ColorPickerBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(colors) { color ->
+                items(Palette) { color ->
                     ColorSwatch(
                         color = color,
                         selected = color == initialColor,
@@ -256,4 +286,3 @@ fun ColorSwatch(
         else null
     ) {}
 }
-

@@ -1,9 +1,8 @@
 // (C) A.Voß, a.voss@fh-aachen.de, info@codebasedlearning.dev
 
-package de.fh_aachen.android.room.model
+package de.fh_aachen.android.room.models
 
 import android.database.sqlite.SQLiteException
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
@@ -15,8 +14,7 @@ import de.fh_aachen.android.room.database.CategoryDao
 import de.fh_aachen.android.room.database.CategoryEntity
 import de.fh_aachen.android.room.database.ProductDao
 import de.fh_aachen.android.room.database.ProductEntity
-import de.fh_aachen.android.room.database.ShopDatabase
-import kotlinx.coroutines.Dispatchers
+import de.fh_aachen.android.room.database.AppDatabase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,16 +24,15 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.random.Random
 
 const val TAG = "ROOM"
 
-class ShopRepository(private val shopDatabase: ShopDatabase) {
+class ShopRepository(private val appDatabase: AppDatabase) {
     // This is the connection to the Daos with all operations.
-    private val categoryDao: CategoryDao = shopDatabase.categoryDao()
-    private val productDao: ProductDao = shopDatabase.productDao()
+    private val categoryDao: CategoryDao = appDatabase.categoryDao()
+    private val productDao: ProductDao = appDatabase.productDao()
 
     // Operations you want to expose. Remember the 'suspend' - Flow - comment.
 
@@ -58,20 +55,25 @@ class ShopRepository(private val shopDatabase: ShopDatabase) {
      *  The count and the inserts form one transaction, so two callers cannot both seed.
      */
     suspend fun seedIfEmpty() {
-        shopDatabase.withTransaction {
+        appDatabase.withTransaction {
             if (categoryDao.count() == 0) insertSampleData()
         }
     }
 
-    // This is temporarily for demonstration purpose.
+    /*
+     * This is temporarily for demonstration purpose.
+     *  Before, it called shopDatabase.clearAllTables(). Since the log is a table of the same
+     *  database, that would also wipe the log - including the entry about the reset. Now it
+     *  deletes only the shop data: the categories, and the CASCADE takes the products along.
+     *  Bonus: unlike clearAllTables (blocking, not allowed in a transaction) this is a normal
+     *  suspend DAO call, so delete and inserts form one transaction - observers (our Flows)
+     *  see the new data once, complete, instead of every intermediate step.
+     */
     suspend fun resetLocalDatabase() {
-        // clearAllTables is a blocking call (not suspend), so it needs a background thread,
-        // and it must not run inside a transaction, so it comes first ...
-        withContext(Dispatchers.IO) { shopDatabase.clearAllTables() }
-
-        // ... and all inserts form one transaction: observers (our Flows) see the new data
-        // once, complete, instead of every intermediate step.
-        shopDatabase.withTransaction { insertSampleData() }
+        appDatabase.withTransaction {
+            categoryDao.deleteAll()
+            insertSampleData()
+        }
     }
 
     // Create categories and products and add them in groups (call inside a transaction).
@@ -104,10 +106,6 @@ class ShopRepository(private val shopDatabase: ShopDatabase) {
 
 /*
  * Everything the screen shows, in one immutable object (cf. models/RawSensorMVI).
- *  Before, the selection lived in two places: 'selectedCategoryId' here and 'catId', 'productId',
- *  'productName' plus the combo boxes' own text in the composable. After 'Reset' (new categories
- *  with new random ids) the composable still held the old id: '+' then violated the foreign key,
- *  the error was only logged, and the combo box still showed the old name.
  */
 data class ShopUiState(
     val categories: List<CategoryEntity> = emptyList(),
@@ -117,8 +115,9 @@ data class ShopUiState(
 )
 
 class ShopViewModel(
-    // Constructor injection instead of RoomApplication.instance, see Factory below
-    private val repository: ShopRepository
+    // Constructor injection, see Factory below
+    private val repository: ShopRepository,
+    private val log: LogRepository,
 ) : ViewModel() {
 
     // Only the IDs of the selection are state here; the selected objects are derived below.
@@ -156,12 +155,12 @@ class ShopViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ShopUiState())
 
     init {
-        launchDb("seedIfEmpty") { repository.seedIfEmpty() }
+        launchDb("app started, seed if empty") { repository.seedIfEmpty() }
     }
 
     // Now the operations on the database. Room's suspend DAO functions and Flows are main-safe,
-    // they switch to their own executor - no Dispatchers.IO needed (only for blocking calls,
-    // see clearAllTables).
+    // they switch to their own executor - no Dispatchers.IO needed (only for blocking calls
+    // like clearAllTables()).
 
     fun selectCategory(categoryId: UUID) {
         selectedCategoryId.value = categoryId
@@ -173,13 +172,14 @@ class ShopViewModel(
     }
 
     // An exception in viewModelScope crashes the app (e.g. a foreign key violation),
-    // so database errors are caught and logged here.
+    // so database errors are caught here - and written to the log table (and Logcat).
     private fun launchDb(what: String, block: suspend () -> Unit) {
         viewModelScope.launch {
             try {
                 block()
+                log.info(TAG, what)
             } catch (e: SQLiteException) {
-                Log.e(TAG, "$what failed", e)
+                log.error(TAG, "$what failed", e)
             }
         }
     }
@@ -192,25 +192,35 @@ class ShopViewModel(
             name = "New Product no ${Random.nextInt(from = 1000, until = 9999)}",
             categoryId = category.id
         )
-        launchDb("addProduct") {
+        launchDb("add product '${product.name}'") {
             repository.addProduct(product)
             selectedProductId.value = product.id
         }
     }
 
+    // The rule for a valid new name lives here, the screen only asks (to enable its button).
+    //  Trimmed, not blank, and actually different - "   " is not a product name.
+    fun canRename(newLabel: String): Boolean {
+        val product = uiState.value.selectedProduct ?: return false
+        val name = newLabel.trim()
+        return name.isNotEmpty() && name != product.name
+    }
+
     fun renameSelectedProduct(newLabel: String) {
         val product = uiState.value.selectedProduct ?: return
-        launchDb("renameSelectedProduct") { repository.updateProductLabel(product.id, newLabel) }
+        if (!canRename(newLabel)) return
+        val name = newLabel.trim()
+        launchDb("rename product '${product.name}' to '$name'") { repository.updateProductLabel(product.id, name) }
     }
 
     fun resetData() {
         // The old rows (and their ids) are gone after a reset, so is the selection
         selectedCategoryId.value = null
         selectedProductId.value = null
-        launchDb("resetData") { repository.resetLocalDatabase() }
+        launchDb("reset shop data") { repository.resetLocalDatabase() }
     }
 
-    fun syncWithExternalData() = launchDb("syncWithExternalData") {
+    fun syncWithExternalData() = launchDb("sync (a placeholder, does nothing yet)") {
         repository.syncWithExternalDatabase()
     }
 
@@ -219,7 +229,7 @@ class ShopViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as RoomApplication
-                ShopViewModel(app.dataRepository)
+                ShopViewModel(app.dataRepository, app.logRepository)
             }
         }
     }

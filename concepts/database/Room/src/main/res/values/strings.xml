@@ -11,4 +11,7 @@
     <string name="select_category">Select a category</string>
     <string name="select_product">Select a product</string>
     <string name="product">Product</string>
+    <string name="nav_log">Log</string>
+    <string name="log_count">%1$d log entries</string>
+    <string name="clear_log">Clear log</string>
 </resources>
