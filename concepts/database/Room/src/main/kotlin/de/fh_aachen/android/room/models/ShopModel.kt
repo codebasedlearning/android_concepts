@@ -14,8 +14,10 @@ import de.fh_aachen.android.room.database.CategoryDao
 import de.fh_aachen.android.room.database.CategoryEntity
 import de.fh_aachen.android.room.database.ProductDao
 import de.fh_aachen.android.room.database.ProductEntity
+import de.fh_aachen.android.room.database.ProductSearchResult
 import de.fh_aachen.android.room.database.AppDatabase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +49,13 @@ class ShopRepository(private val appDatabase: AppDatabase) {
     suspend fun updateProductLabel(productId: UUID, newLabel: String) = productDao.updateItemLabel(productId, newLabel)
 
     suspend fun syncWithExternalDatabase() { /* do what ever you have to */ }
+
+    // Search in all products. The user's text is taken literally: '%' and '_' would be LIKE
+    //  wildcards, so they (and the escape character itself) get a backslash in front.
+    fun searchProducts(text: String): Flow<List<ProductSearchResult>> {
+        val pattern = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        return productDao.search(pattern)
+    }
 
     /*
      * An empty database (first start) gets the sample data, so the screen is not

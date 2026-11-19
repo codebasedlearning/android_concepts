@@ -11,6 +11,11 @@
     <string name="select_category">Select a category</string>
     <string name="select_product">Select a product</string>
     <string name="product">Product</string>
+    <string name="nav_search">Search</string>
+    <string name="search_hint">Search all products</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_count">%1$d products</string>
+    <string name="search_nothing_found">No product contains “%1$s”.</string>
     <string name="nav_log">Log</string>
     <string name="log_count">%1$d log entries</string>
     <string name="clear_log">Clear log</string>

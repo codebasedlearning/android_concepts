@@ -98,6 +98,16 @@ interface CategoryDao {
     //      fun getCategoryById(id: UUID): Flow<CategoryEntity?>
 }
 
+/*
+ * A query result does not have to be an entity: Room maps the columns of the SELECT to the
+ *  properties of any data class by name ('AS categoryName'). Not a table, so no schema change.
+ */
+data class ProductSearchResult(
+    val id: UUID,
+    val name: String,
+    val categoryName: String,
+)
+
 @Dao
 interface ProductDao {
     @Insert
@@ -111,6 +121,23 @@ interface ProductDao {
 
     @Query("UPDATE product SET name = :newName WHERE id = :id")
     suspend fun updateItemLabel(id: UUID, newName: String)
+
+    /*
+     * All products whose name contains 'pattern', with the name of their category.
+     *  - LIKE is case-insensitive in SQLite (for ASCII letters; 'Ä' and 'ä' differ).
+     *  - '%' || :pattern || '%': the wildcards are added in SQL, the parameter stays a plain
+     *    bound value - never build SQL by string concatenation in Kotlin (SQL injection).
+     *  - ESCAPE: '%' and '_' typed by the user are escaped by the repository, see there.
+     *  - An empty pattern matches everything: the empty search shows all products.
+     *  - A Flow: the result list updates itself when a product is added or renamed.
+     */
+    @Query("""
+        SELECT p.id, p.name, c.name AS categoryName
+        FROM product p JOIN category c ON c.id = p.categoryId
+        WHERE p.name LIKE '%' || :pattern || '%' ESCAPE '\'
+        ORDER BY p.name
+    """)
+    fun search(pattern: String): Flow<List<ProductSearchResult>>
 }
 
 @Dao

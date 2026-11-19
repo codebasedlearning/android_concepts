@@ -51,6 +51,7 @@ import kotlinx.serialization.Serializable
 sealed interface Screen : NavKey {
     @Serializable data object Home : Screen
     @Serializable data object DB : Screen
+    @Serializable data object Search : Screen
     @Serializable data object Log : Screen
 }
 
@@ -81,6 +82,7 @@ fun RoomApp() {
         destinations = listOf(
             ConceptDestination(Screen.Home, R.drawable.icon_home, stringResource(R.string.nav_home)),
             ConceptDestination(Screen.DB, R.drawable.icon_database, stringResource(R.string.nav_database)),
+            ConceptDestination(Screen.Search, R.drawable.icon_search, stringResource(R.string.nav_search)),
             ConceptDestination(Screen.Log, R.drawable.icon_log, stringResource(R.string.nav_log)),
         ),
         selected = backStack.lastOrNull(),
@@ -100,6 +102,11 @@ fun RoomApp() {
                 entry<Screen.DB> {
                     ScreenWithBackground(R.drawable.database_garage) {
                         DatabaseScreen(onGoHome = { backStack.navigateToTopLevel(Screen.Home) })
+                    }
+                }
+                entry<Screen.Search> {
+                    ScreenWithBackground(ConceptBackground.Zoo) {
+                        SearchScreen()
                     }
                 }
                 entry<Screen.Log> {
